@@ -77,38 +77,165 @@ vec4 blendWeights(float p, vec3 centers, float overlap) {
 `;
 
 /**
- * PHASE 1 STUBS. Crude placeholders — the blend is what is under test here.
- * Each function reads only the fixed instance attribute set.
+ * Shared helpers for the state functions. Kept out of the individual states so
+ * each state function reads as a single idea.
+ */
+export const STATE_SUPPORT_GLSL = /* glsl */ `
+const float TAU = 6.28318530718;
+
+/**
+ * fract(i * phi) at full precision for i up to ~10^6.
+ *
+ * A naive fract(i * 0.618) loses the low mantissa bits once i * phi passes a
+ * few thousand, which collapses 45k distinct longitudes onto a few hundred and
+ * puts visible seams down the shell. Splitting i into a 1024-block index and a
+ * remainder keeps both products small enough to stay exact.
+ */
+float goldenFract(float i) {
+  const float G = 0.6180339887;
+  const float G1024 = 0.8668044799; // fract(1024.0 * G)
+  float k = floor(i / 1024.0);
+  float lo = i - k * 1024.0;
+  return fract(fract(k * G1024) + fract(lo * G));
+}
+
+/** Point at parameter t along edge e (0..11) of the unit cube, centred. */
+vec3 cubeEdge(float e, float t) {
+  float axis = floor(e / 4.0);
+  float k = mod(e, 4.0);
+  float a = mod(k, 2.0);
+  float b = floor(k / 2.0);
+  vec3 p;
+  if (axis < 0.5) p = vec3(t, a, b);
+  else if (axis < 1.5) p = vec3(a, t, b);
+  else p = vec3(a, b, t);
+  return p - 0.5;
+}
+`;
+
+/**
+ * A — dense grid lattice, curl-noise displaced, the displacement radiating out
+ * of the pointer hit point.
  */
 export const STATE_A_GLSL = /* glsl */ `
+const vec3 A_EXTENT = vec3(19.0, 10.0, 9.5);
+
 vec3 stateA(vec3 grid, vec3 seed, float id) {
-  return (grid - 0.5) * vec3(14.0, 8.0, 8.0);
+  vec3 p = (grid - 0.5) * A_EXTENT;
+
+  // Ambient drift, enough to break the axis-aligned moire of a perfect lattice.
+  p += curlNoise(p * 0.115 + vec3(0.0, 0.0, uTime * 0.035)) * 0.5;
+
+  // Radial swell out of the pointer, gaussian in the screen-facing plane.
+  vec3 toP = p - uPointer;
+  float d2 = dot(toP.xy, toP.xy);
+  float infl = exp(-d2 * 0.045) * uPointerStrength;
+  if (infl > 0.002) {
+    p += normalize(toP + vec3(1e-4)) * infl * 2.9;
+    p += curlNoise(p * 0.3 + vec3(uTime * 0.12)) * infl * 1.35;
+  }
+  return p;
 }
 `;
 
+/**
+ * B — cascading wireframe terrain. Height is fbm; the sheet terraces into
+ * contour steps and peels over its far edge. uScrollVelocity bends it.
+ *
+ * The wireframe read is structural, not a material: grid.xz picks a terrain
+ * cell and grid.y walks the particle along one of that cell's two edges, so
+ * the lattice literally draws the quad edges of the surface.
+ */
 export const STATE_B_GLSL = /* glsl */ `
+const vec2 B_EXTENT = vec2(21.0, 17.0);
+const float B_TILT = 0.34; // tips the sheet off edge-on for a level camera
+
 vec3 stateB(vec3 grid, vec3 seed, float id) {
-  vec2 xz = (grid.xz - 0.5) * vec2(16.0, 16.0);
-  float y = sin(xz.x * 0.5 + uTime) * cos(xz.y * 0.5) * 1.5;
-  return vec3(xz.x, y, xz.y);
+  float t = grid.y;
+  float alongZ = step(0.5, fract(id * 0.5)); // alternate edge orientation
+  vec2 cell = grid.xz + mix(vec2(t, 0.0), vec2(0.0, t), alongZ) * uCellStep;
+
+  vec2 xz = (cell - 0.5) * B_EXTENT;
+
+  float h = fbm2(xz * 0.115 + vec2(uTime * 0.022, 0.0));
+  float terraced = floor(h * 3.5) / 3.5;
+  h = mix(h, terraced, 0.55) * 3.0;
+
+  // The near edge of the sheet cascades down and toward the viewer.
+  float fall = smoothstep(0.45, 1.0, cell.y);
+  float fall2 = fall * fall;
+
+  float bend = uScrollVelocity;
+  float y = h * (1.0 - fall * 0.5) - fall2 * 5.6;
+  y += sin(xz.y * 0.19 + uTime * 0.45) * bend * 2.1;
+
+  vec3 q = vec3(xz.x + bend * xz.y * 0.09, y, xz.y + fall2 * 2.4);
+
+  float ca = cos(B_TILT);
+  float sa = sin(B_TILT);
+  q.yz = vec2(q.y * ca - q.z * sa, q.y * sa + q.z * ca);
+
+  return q + vec3(0.0, 1.1, 0.0);
 }
 `;
 
+/**
+ * C — spherical shell on a Fibonacci lattice, radius modulated by fbm.
+ *
+ * The liquid read is NOT produced here. It comes from the per-instance
+ * fresnel-weighted RGB channel offset in the fragment shader — three slightly
+ * divergent sample positions per particle. No second mesh, no transmission.
+ */
 export const STATE_C_GLSL = /* glsl */ `
+const float C_RADIUS = 6.1;
+
 vec3 stateC(vec3 grid, vec3 seed, float id) {
-  vec3 dir = normalize(seed * 2.0 - 1.0 + vec3(0.0001));
-  return dir * 5.0;
+  float i = id + 0.5;
+  float cosPhi = 1.0 - 2.0 * i / uCount;
+  float sinPhi = sqrt(max(0.0, 1.0 - cosPhi * cosPhi));
+  float theta = TAU * goldenFract(i);
+  vec3 dir = vec3(cos(theta) * sinPhi, cosPhi, sin(theta) * sinPhi);
+
+  float n = fbm3(dir * 1.85 + vec3(0.0, uTime * 0.085, uTime * 0.05));
+  float r = C_RADIUS * (1.0 + 0.155 * n);
+
+  // A slow drift on the shell surface keeps it reading as fluid, not printed.
+  r += sin(theta * 3.0 + uTime * 0.6) * 0.07;
+
+  return dir * r;
 }
 `;
 
+/**
+ * D — particles snapped onto the bounding-box wireframe edges of a 4x2x4
+ * array. The uScanY scanline band is applied in the vertex shader's main(),
+ * where it can read the blended position; here we only place the edges.
+ */
 export const STATE_D_GLSL = /* glsl */ `
+const vec3 D_PITCH = vec3(3.9, 3.7, 3.9);
+const vec3 D_CELL = vec3(2.85, 2.7, 2.85);
+const vec3 D_ORIGIN = vec3(1.5, 0.5, 1.5); // centres a 4 x 2 x 4 array
+
 vec3 stateD(vec3 grid, vec3 seed, float id) {
-  vec3 c = floor(grid * vec3(4.0, 2.0, 4.0)) / vec3(4.0, 2.0, 4.0);
-  return (c - 0.5) * vec3(16.0, 8.0, 16.0);
+  float cellIndex = mod(id, 32.0);
+  vec3 cell = vec3(
+    mod(cellIndex, 4.0),
+    mod(floor(cellIndex / 4.0), 2.0),
+    floor(cellIndex / 8.0)
+  );
+
+  float rest = floor(id / 32.0);
+  float edge = mod(rest, 12.0);
+  float slot = floor(rest / 12.0);
+  float t = clamp((slot + 0.5) / uEdgeSamples, 0.0, 1.0);
+
+  vec3 local = cubeEdge(edge, t) * D_CELL;
+  return (cell - D_ORIGIN) * D_PITCH + local;
 }
 `;
 
 export const STATES_GLSL = [
+  STATE_SUPPORT_GLSL,
   STATE_A_GLSL,
   STATE_B_GLSL,
   STATE_C_GLSL,

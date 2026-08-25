@@ -94,6 +94,11 @@ export class ParticleSystem {
         uScanY: { value: 0 },
         uScanWidth: { value: 0.85 },
         uCount: { value: count },
+        // Terrain cell footprint, so state B can walk a particle along one
+        // edge of its own lattice cell.
+        uCellStep: { value: new Vector2(1 / gx, 1 / gz) },
+        // Particles available per cube edge in state D: 32 cells * 12 edges.
+        uEdgeSamples: { value: Math.max(2, Math.floor(count / (32 * 12))) },
         uSize: { value: 0.05 },
         uChroma: { value: 0.22 },
         uDepthFade: { value: new Vector2(12, 26) },

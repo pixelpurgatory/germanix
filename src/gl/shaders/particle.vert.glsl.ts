@@ -25,6 +25,8 @@ uniform float uScrollVelocity;
 uniform float uScanY;
 uniform float uScanWidth;
 uniform float uCount;
+uniform vec2 uCellStep;
+uniform float uEdgeSamples;
 uniform float uSize;
 uniform float uChroma;
 uniform vec2 uDepthFade;
