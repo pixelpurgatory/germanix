@@ -19,6 +19,15 @@ export type GridDims = readonly [number, number, number];
 export const TIER_DESKTOP: GridDims = [50, 30, 30]; // 45 000
 export const TIER_COMPACT: GridDims = [30, 20, 20]; // 12 000
 
+const COMPACT_MAX_WIDTH = 768;
+
+/** 12k instances on coarse pointers or narrow viewports, 45k otherwise. */
+export function selectTier(): GridDims {
+  const coarsePointer = window.matchMedia("(pointer: coarse)").matches;
+  const narrow = window.innerWidth < COMPACT_MAX_WIDTH;
+  return coarsePointer || narrow ? TIER_COMPACT : TIER_DESKTOP;
+}
+
 /** Deterministic PRNG so every build produces the identical instance set. */
 function mulberry32(seed: number): () => number {
   let a = seed >>> 0;

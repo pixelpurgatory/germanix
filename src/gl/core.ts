@@ -14,12 +14,24 @@ export type FrameCallback = (elapsed: number, delta: number) => void;
 
 const RESIZE_DEBOUNCE_MS = 140;
 
+/** Adaptive quality: rolling window, threshold and the render scale ladder. */
+const FRAME_WINDOW = 60;
+const SLOW_FRAME_MS = 20;
+const RENDER_SCALES: readonly number[] = [1, 0.75, 0.6];
+
+/** Ignore absurd deltas (tab resume, breakpoint) instead of animating through them. */
+const MAX_DELTA = 0.1;
+
+export function prefersReducedMotion(): boolean {
+  return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+}
+
 /**
  * The single renderer, camera and RAF loop for the whole page.
  *
- * Built once in the constructor and never rebuilt. Resizing touches the camera
- * projection and the renderer drawing buffer only — the WebGL context is never
- * disposed or recreated.
+ * Built once in the constructor and never rebuilt. Resizing and quality
+ * changes touch the camera projection and the drawing buffer only — the WebGL
+ * context is never disposed or recreated.
  */
 export class GLCore {
   readonly renderer: WebGLRenderer;
@@ -30,7 +42,13 @@ export class GLCore {
   private readonly frameCallbacks: FrameCallback[] = [];
   private rafId = 0;
   private resizeTimer = 0;
+  private loopRequested = false;
+
+  private elapsed = 0;
   private renderScale = 1;
+  private qualityTier = 0;
+  private frameSamples = 0;
+  private frameAccumMs = 0;
 
   constructor(canvas: HTMLCanvasElement) {
     this.renderer = new WebGLRenderer({
@@ -49,6 +67,7 @@ export class GLCore {
 
     this.applySize();
     window.addEventListener("resize", this.onResize, { passive: true });
+    document.addEventListener("visibilitychange", this.onVisibilityChange);
   }
 
   onFrame(cb: FrameCallback): void {
@@ -56,18 +75,16 @@ export class GLCore {
   }
 
   start(): void {
-    if (this.rafId !== 0) return;
-    if (!this.clock.running) this.clock.start();
-    this.schedule();
+    this.loopRequested = true;
+    if (!document.hidden) this.resume();
   }
 
   stop(): void {
-    if (this.rafId === 0) return;
-    cancelAnimationFrame(this.rafId);
-    this.rafId = 0;
+    this.loopRequested = false;
+    this.suspend();
   }
 
-  /** Render exactly one frame without starting the loop. */
+  /** Render exactly one frame without starting the loop (reduced-motion path). */
   renderOnce(): void {
     this.runFrame(0);
   }
@@ -82,10 +99,54 @@ export class GLCore {
     this.runFrame(this.clock.getDelta());
   };
 
-  private runFrame(delta: number): void {
-    const elapsed = this.clock.getElapsedTime();
-    for (const cb of this.frameCallbacks) cb(elapsed, delta);
+  private resume(): void {
+    if (this.rafId !== 0) return;
+    if (!this.clock.running) this.clock.start();
+    this.schedule();
+  }
+
+  private suspend(): void {
+    if (this.rafId === 0) return;
+    cancelAnimationFrame(this.rafId);
+    this.rafId = 0;
+  }
+
+  /** visibilitychange: stop the RAF loop when hidden, resume on return. */
+  private readonly onVisibilityChange = (): void => {
+    if (document.hidden) this.suspend();
+    else if (this.loopRequested) this.resume();
+  };
+
+  private runFrame(rawDelta: number): void {
+    const delta = Math.min(rawDelta, MAX_DELTA);
+    this.elapsed += delta;
+    for (const cb of this.frameCallbacks) cb(this.elapsed, delta);
     this.renderer.render(this.scene, this.camera);
+    if (rawDelta > 0) this.sampleFrame(rawDelta * 1000);
+  }
+
+  /**
+   * Adaptive quality. Averages frame time over a rolling 60-frame window and
+   * steps the render scale down (1 -> 0.75 -> 0.6) whenever the window
+   * averages slower than 20 ms. Downgrade only: re-upgrading on a recovered
+   * window is how these controllers end up oscillating.
+   */
+  private sampleFrame(frameMs: number): void {
+    if (frameMs > MAX_DELTA * 1000) return; // resume spike, not a real frame
+    this.frameAccumMs += frameMs;
+    this.frameSamples++;
+    if (this.frameSamples < FRAME_WINDOW) return;
+
+    const average = this.frameAccumMs / this.frameSamples;
+    this.frameAccumMs = 0;
+    this.frameSamples = 0;
+
+    if (average <= SLOW_FRAME_MS) return;
+    if (this.qualityTier >= RENDER_SCALES.length - 1) return;
+
+    this.qualityTier++;
+    this.renderScale = RENDER_SCALES[this.qualityTier] ?? 0.6;
+    this.applySize();
   }
 
   /** Camera + drawing buffer only. Never disposes, never rebuilds the context. */
@@ -101,6 +162,7 @@ export class GLCore {
     );
   }
 
+  /** Debounced resize. Camera + renderer resize only. */
   private readonly onResize = (): void => {
     window.clearTimeout(this.resizeTimer);
     this.resizeTimer = window.setTimeout(this.applyDebouncedSize, RESIZE_DEBOUNCE_MS);
