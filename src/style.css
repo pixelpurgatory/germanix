@@ -12,13 +12,16 @@
     --c-accent: #c4b5a0;
   }
 
+  /* The base colour lives on <html> only. A background on <body> would paint
+     in front of the z-index:-1 canvas, which is an in-flow-descendant vs.
+     negative-stacking-order paint-order trap. */
   html {
     scroll-behavior: auto;
     background-color: var(--c-base);
   }
 
   body {
-    background-color: var(--c-base);
+    background-color: transparent;
     color: var(--c-text);
     overflow-x: hidden;
   }
