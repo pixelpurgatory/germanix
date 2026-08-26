@@ -12,6 +12,7 @@ precision highp float;
 uniform vec3 uColorParticle;
 uniform vec3 uColorAccent;
 uniform float uOpacity;
+uniform float uChromaMix;
 
 varying vec2 vUv;
 varying float vAlpha;
@@ -36,7 +37,12 @@ void main() {
   // other than C stays perfectly neutral.
   vec3 split = clamp(vec3(r, g, b) / max(a, 1e-4), 0.0, 1.0);
 
-  vec3 col = uColorParticle * mix(vec3(1.0), split, 0.9) * vShade;
+  // A raw channel split drifts straight into cyan and violet on the limb.
+  // Keep the divergence but cap how far the hue can travel, and spend the
+  // residue on the warm accent so the shell reads wet rather than aberrated.
+  float spread = abs(r - b) / max(a, 1e-4);
+  vec3 col = uColorParticle * mix(vec3(1.0), split, uChromaMix) * vShade;
+  col = mix(col, uColorAccent, clamp(spread, 0.0, 1.0) * 0.45);
   col = mix(col, uColorAccent, clamp(vScan, 0.0, 1.0) * 0.9);
 
   float alpha = a * vAlpha * uOpacity * (1.0 + vScan * 1.15);

@@ -12,23 +12,64 @@
     --c-accent: #c4b5a0;
   }
 
+  /* Reset. Tailwind's preflight is disabled in tailwind.config.js because it
+     emits colours outside the approved palette; this replaces the parts of it
+     that this page actually needs. */
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+    border: 0 solid var(--c-hairline);
+  }
+
+  html,
+  body,
+  h1,
+  h2,
+  p,
+  ul,
+  figure {
+    margin: 0;
+    padding: 0;
+  }
+
+  h1,
+  h2 {
+    font-size: inherit;
+    font-weight: inherit;
+  }
+
+  ul {
+    list-style: none;
+  }
+
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  canvas,
+  img,
+  svg {
+    display: block;
+    max-width: 100%;
+  }
+
   /* The base colour lives on <html> only. A background on <body> would paint
-     in front of the z-index:-1 canvas, which is an in-flow-descendant vs.
-     negative-stacking-order paint-order trap. */
+     in front of the z-index:-1 canvas: in-flow descendant backgrounds paint
+     after negative-stacking-order children. */
   html {
-    scroll-behavior: auto;
     background-color: var(--c-base);
+    -webkit-text-size-adjust: 100%;
+    font-family: theme("fontFamily.sans");
   }
 
   body {
     background-color: transparent;
     color: var(--c-text);
-    overflow-x: hidden;
-  }
-
-  /* Phase 1 scaffold height so ScrollTrigger has a range. Replaced in phase 4. */
-  #page {
-    min-height: 600vh;
+    line-height: 1.5;
+    font-synthesis-weight: none;
+    text-rendering: optimizeLegibility;
   }
 
   #gl {
@@ -37,25 +78,66 @@
     width: 100%;
     height: 100%;
     z-index: -1;
-    display: block;
     pointer-events: none;
+  }
+
+  ::selection {
+    background-color: var(--c-accent);
+    color: var(--c-base);
+  }
+
+  :focus-visible {
+    outline: 1px solid var(--c-accent);
+    outline-offset: 3px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
   }
 }
 
 @layer components {
   .label {
-    @apply font-mono uppercase tracking-label text-[11px] leading-none text-muted;
+    @apply font-mono text-[11px] uppercase leading-none tracking-label text-muted;
   }
 
   .metric-value {
-    @apply font-mono text-[13px] leading-none tracking-label text-text;
+    @apply font-mono text-[12px] uppercase leading-none tracking-label text-text;
   }
 
   .metric-label {
-    @apply font-mono uppercase tracking-label text-[11px] leading-none text-muted;
+    @apply font-mono text-[11px] uppercase leading-[1.35] tracking-label text-muted;
   }
 
-  .hairline {
-    @apply border-hairline;
+  /* Single-hue readability scrims. Written by hand rather than with gradient
+     utilities so the stylesheet stays free of Tailwind's transparent-black
+     placeholder value, and so both reference the one --c-base declaration. */
+  .scrim-left {
+    background-image: linear-gradient(
+      to right,
+      var(--c-base) 0%,
+      color-mix(in srgb, var(--c-base) 88%, transparent) 45%,
+      transparent 100%
+    );
+  }
+
+  .scrim-right {
+    background-image: linear-gradient(
+      to left,
+      var(--c-base) 0%,
+      color-mix(in srgb, var(--c-base) 88%, transparent) 45%,
+      transparent 100%
+    );
+  }
+
+  /* Lets the settled state-D array stay faintly visible behind the band. */
+  .band-surface {
+    background-color: color-mix(in srgb, var(--c-surface) 74%, transparent);
   }
 }

@@ -63,6 +63,21 @@ for (let i = 0; i <= STEPS; i++) {
   prev = w;
 }
 
+// The exact sum-to-one relies on the three bands never touching each other.
+// If a layout change slid two boundaries together, the weights would still be
+// smooth but would stop summing to 1 — assert the precondition directly.
+const half = BLEND_OVERLAP / 2;
+for (let i = 1; i < BLEND_CENTERS.length; i++) {
+  const lower = BLEND_CENTERS[i - 1] ?? 0;
+  const upper = BLEND_CENTERS[i] ?? 0;
+  if (lower + half >= upper - half) {
+    record(`transition bands ${i - 1} and ${i} overlap (${lower} vs ${upper})`);
+  }
+}
+if ((BLEND_CENTERS[0] ?? 0) - half <= 0 || (BLEND_CENTERS[2] ?? 1) + half >= 1) {
+  record("a transition band runs past the ends of uProgress");
+}
+
 // Every state must actually participate in its transition band.
 const bands: ReadonlyArray<readonly [number, number, number]> = [
   [BLEND_CENTERS[0], 0, 1],

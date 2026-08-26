@@ -1,11 +1,15 @@
 import "./style.css";
 import { GLCore, prefersReducedMotion } from "./gl/core.ts";
 import { ParticleSystem, selectTier } from "./gl/system.ts";
-import { createScrollDriver } from "./scroll.ts";
+import { attachReveals, createScrollDriver } from "./scroll.ts";
 import { createPointerDriver } from "./pointer.ts";
+import { buildPage } from "./page.ts";
 
 const canvas = document.querySelector<HTMLCanvasElement>("#gl");
-if (!canvas) throw new Error("missing #gl canvas");
+const mount = document.querySelector<HTMLElement>("#page");
+if (!canvas || !mount) throw new Error("missing #gl canvas or #page mount");
+
+const reveals = buildPage(mount);
 
 const core = new GLCore(canvas);
 const system = new ParticleSystem(selectTier());
@@ -23,6 +27,7 @@ if (prefersReducedMotion()) {
 } else {
   const scroll = createScrollDriver();
   const pointer = createPointerDriver(core.camera);
+  attachReveals(reveals);
   let velocity = 0;
 
   core.onFrame((elapsed) => {

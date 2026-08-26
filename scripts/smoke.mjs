@@ -23,7 +23,10 @@ const argOf = (name, fallback) => {
 
 const POSITIONS = argOf("positions", "0,0.35,0.68,0.97").split(",").map(Number);
 const OUT_DIR = argOf("out", ".smoke");
-const VIEWPORT = { width: 1440, height: 900 };
+const VIEWPORT = {
+  width: Number(argOf("width", "1440")),
+  height: Number(argOf("height", "900")),
+};
 const CHROME = "/opt/pw-browsers/chromium-1194/chrome-linux/chrome";
 
 const MIME = {
@@ -128,6 +131,7 @@ const chrome = spawn(
 chrome.stderr.on("data", () => {});
 
 const messages = [];
+let renderedCopy = null;
 let exitCode = 0;
 
 try {
@@ -157,6 +161,13 @@ try {
     mobile: false,
   });
 
+  if (args.includes("--reduced")) {
+    await client.send("Emulation.setEmulatedMedia", {
+      features: [{ name: "prefers-reduced-motion", value: "reduce" }],
+    });
+    console.log("  emulating prefers-reduced-motion: reduce");
+  }
+
   await client.send("Page.navigate", { url: pageUrl });
   await new Promise((r) => setTimeout(r, 3500));
 
@@ -171,6 +182,27 @@ try {
     const name = join(OUT_DIR, `p${String(Math.round(p * 100)).padStart(3, "0")}.png`);
     await writeFile(name, Buffer.from(shot.data, "base64"));
     console.log(`  captured ${name}`);
+  }
+
+  if (args.includes("--copy-audit")) {
+    const res = await client.send("Runtime.evaluate", {
+      expression: `(() => {
+        const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+        const text = [];
+        while (walker.nextNode()) {
+          const t = walker.currentNode.nodeValue.trim();
+          if (t) text.push(t);
+        }
+        const meta = document.querySelector('meta[name="description"]');
+        return JSON.stringify({
+          title: document.title,
+          description: meta ? meta.content : null,
+          text,
+        });
+      })()`,
+      returnByValue: true,
+    });
+    renderedCopy = JSON.parse(res.result.value);
   }
 
   const probe = await client.send("Runtime.evaluate", {
@@ -196,6 +228,44 @@ try {
 } finally {
   chrome.kill("SIGKILL");
   server.close();
+}
+
+// Every rendered string must be reconstructible from src/content.ts alone.
+// Strip content strings longest-first; anything but whitespace left over is a
+// string that entered the page from somewhere other than the content module.
+if (renderedCopy) {
+  const { content } = await import(new URL("../src/content.ts", import.meta.url).href);
+  const pool = [];
+  const collect = (value) => {
+    if (typeof value === "string") pool.push(value);
+    else if (Array.isArray(value)) value.forEach(collect);
+    else if (value && typeof value === "object") Object.values(value).forEach(collect);
+  };
+  collect(content);
+  pool.sort((a, b) => b.length - a.length);
+
+  const rendered = [renderedCopy.title, renderedCopy.description, ...renderedCopy.text].filter(
+    Boolean,
+  );
+  const strays = [];
+  for (const line of rendered) {
+    let rest = line;
+    for (const piece of pool) {
+      while (piece && rest.includes(piece)) rest = rest.replace(piece, "");
+    }
+    if (rest.trim() !== "") strays.push({ line, rest: rest.trim() });
+  }
+
+  console.log(
+    `\n  copy audit: ${rendered.length} rendered strings vs ${pool.length} in content.ts`,
+  );
+  if (strays.length) {
+    for (const s of strays) console.error(`    STRAY ${JSON.stringify(s.rest)} in ${JSON.stringify(s.line)}`);
+    console.error(`  copy audit: FAIL — ${strays.length} string(s) not sourced from content.ts`);
+    exitCode = 1;
+  } else {
+    console.log("  copy audit: PASS — every rendered string comes from content.ts");
+  }
 }
 
 const bad = messages.filter(

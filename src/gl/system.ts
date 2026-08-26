@@ -109,7 +109,8 @@ export class ParticleSystem {
         // Particles available per cube edge in state D: 32 cells * 12 edges.
         uEdgeSamples: { value: Math.max(2, Math.floor(count / (32 * 12))) },
         uSize: { value: 0.05 },
-        uChroma: { value: 0.22 },
+        uChroma: { value: 0.17 },
+        uChromaMix: { value: 0.38 },
         uDepthFade: { value: new Vector2(12, 26) },
         uColorParticle: { value: new Color(PALETTE.text) },
         uColorAccent: { value: new Color(PALETTE.accent) },

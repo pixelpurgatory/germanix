@@ -1,6 +1,21 @@
 /** @type {import('tailwindcss').Config} */
 export default {
   content: ["./index.html", "./src/**/*.{ts,js}"],
+  // Preflight ships #e5e7eb (border default) and #9ca3af (::placeholder); the
+  // shadow and ring plugins ship #fff, #0000 and a default blue ring colour.
+  // None are reachable on this page but all land in the stylesheet, so they
+  // are switched off and src/style.css carries its own reset instead.
+  corePlugins: {
+    preflight: false,
+    boxShadow: false,
+    boxShadowColor: false,
+    ringWidth: false,
+    ringColor: false,
+    ringOffsetWidth: false,
+    ringOffsetColor: false,
+    ringOpacity: false,
+    ringInset: false,
+  },
   theme: {
     extend: {
       colors: {

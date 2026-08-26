@@ -62,8 +62,11 @@ export class GLCore {
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
     this.renderer.setClearColor(new Color(PALETTE.base), 1);
 
+    // Deliberately off-axis: dead-centre, the lattice and the 4x2x4 array both
+    // resolve into mirror-symmetric targets rather than reading as objects.
     this.camera = new PerspectiveCamera(38, 1, 0.1, 160);
-    this.camera.position.set(0, 0, 22);
+    this.camera.position.set(3.1, 1.7, 22);
+    this.camera.lookAt(0, 0, 0);
 
     this.applySize();
     window.addEventListener("resize", this.onResize, { passive: true });

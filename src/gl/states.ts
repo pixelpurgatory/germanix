@@ -24,17 +24,51 @@ export const STATES: readonly StateMeta[] = [
   { key: "D", title: "array" },
 ];
 
-/** Centres of the three transition bands along uProgress (0 -> 1). */
-export const BLEND_CENTERS: readonly [number, number, number] = [0.3, 0.55, 0.8];
+/**
+ * Page layout, in vh. The blend windows *are* the page layout — a transition
+ * has to land on a section boundary or the copy and the geometry disagree — so
+ * both are derived from this one block. `page.ts` sizes the sections from it.
+ */
+export const LAYOUT_VH = {
+  hero: 180,
+  section: 140,
+  conversion: 100,
+  footer: 12,
+  viewport: 100,
+} as const;
+
+const TOTAL_VH =
+  LAYOUT_VH.hero + LAYOUT_VH.section * 4 + LAYOUT_VH.conversion + LAYOUT_VH.footer;
+const SCROLL_VH = TOTAL_VH - LAYOUT_VH.viewport;
 
 /** Width of each transition band. Every state has nonzero weight inside it. */
 export const BLEND_OVERLAP = 0.08;
+
+/** Scroll progress at the boundary after section `i` (1-based). */
+function boundary(i: number): number {
+  return (LAYOUT_VH.hero + i * LAYOUT_VH.section) / SCROLL_VH;
+}
+
+/**
+ * Centres of the three transition bands along uProgress (0 -> 1).
+ *
+ * Each band *ends* on a section boundary rather than being centred on it. A
+ * section's copy pins the moment its boundary is crossed, so a centred band
+ * would leave the morph still resolving through the first half of the pin —
+ * the reader gets a half-blended cloud while reading about terrain. Ending the
+ * band there means the state is fully settled exactly as its copy locks in.
+ */
+export const BLEND_CENTERS: readonly [number, number, number] = [
+  boundary(1) - BLEND_OVERLAP / 2,
+  boundary(2) - BLEND_OVERLAP / 2,
+  boundary(3) - BLEND_OVERLAP / 2,
+];
 
 function clamp01(x: number): number {
   return x < 0 ? 0 : x > 1 ? 1 : x;
 }
 
-function smoothstep(edge0: number, edge1: number, x: number): number {
+export function smoothstep(edge0: number, edge1: number, x: number): number {
   const t = clamp01((x - edge0) / (edge1 - edge0));
   return t * t * (3 - 2 * t);
 }
