@@ -10,6 +10,8 @@
     --c-muted: #8a8a93;
     --c-text: #ededef;
     --c-accent: #c4b5a0;
+
+    --topbar-h: 60px;
   }
 
   /* Reset. Tailwind's preflight is disabled in tailwind.config.js because it
@@ -62,6 +64,7 @@
     background-color: var(--c-base);
     -webkit-text-size-adjust: 100%;
     font-family: theme("fontFamily.sans");
+    scroll-padding-top: var(--topbar-h);
   }
 
   body {
@@ -70,6 +73,7 @@
     line-height: 1.5;
     font-synthesis-weight: none;
     text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
   }
 
   #gl {
@@ -103,26 +107,241 @@
 }
 
 @layer components {
+  /* ---- type ---------------------------------------------------------- */
+
+  .text-display {
+    font-size: clamp(2.4rem, 5.3vw, 4.25rem);
+    line-height: 0.97;
+    letter-spacing: -0.03em;
+    font-weight: 500;
+    text-wrap: balance;
+  }
+
+  .text-headline {
+    font-size: clamp(1.9rem, 3.5vw, 2.85rem);
+    line-height: 1.02;
+    letter-spacing: -0.03em;
+    font-weight: 500;
+    text-wrap: balance;
+  }
+
+  /* Body copy carries slight negative tracking; at 15px, zero tracking is
+     what makes a page read like a default stylesheet. */
+  .text-body {
+    font-size: 15px;
+    line-height: 1.65;
+    letter-spacing: -0.011em;
+    text-wrap: pretty;
+  }
+
   .label {
     @apply font-mono text-[11px] uppercase leading-none tracking-label text-muted;
   }
 
+  /* ---- structure ------------------------------------------------------ */
+
+  /* Fixed hairline column rules behind everything, aligned to the content
+     grid. Cheap way to give an otherwise floating layout a spine. */
+  /* Starts below the top bar, which is translucent: a rule showing through it
+     reads as a rendering glitch across the wordmark. */
+  .grid-rules {
+    position: fixed;
+    top: var(--topbar-h);
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 0;
+    pointer-events: none;
+  }
+
+  .grid-rules-inner {
+    height: 100%;
+    border-left: 1px solid color-mix(in srgb, var(--c-hairline) 70%, transparent);
+    border-right: 1px solid color-mix(in srgb, var(--c-hairline) 70%, transparent);
+    background-image: repeating-linear-gradient(
+      to right,
+      transparent 0,
+      transparent calc(25% - 1px),
+      color-mix(in srgb, var(--c-hairline) 55%, transparent) calc(25% - 1px),
+      color-mix(in srgb, var(--c-hairline) 55%, transparent) 25%
+    );
+  }
+
+  .rule {
+    flex: 1 1 auto;
+    height: 1px;
+    min-width: 1.5rem;
+    background-color: var(--c-hairline);
+  }
+
+  .scroll-tick {
+    width: 1px;
+    height: 34px;
+    background-image: linear-gradient(to bottom, var(--c-accent), transparent);
+  }
+
+  /* ---- top bar -------------------------------------------------------- */
+
+  .topbar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 20;
+    height: var(--topbar-h);
+    border-bottom: 1px solid var(--c-hairline);
+    /* Near opaque on purpose: at 80% the copy scrolling underneath is legible
+       through the bar and collides with the nav. */
+    background-color: color-mix(in srgb, var(--c-base) 96%, transparent);
+  }
+
+  .topbar-brand {
+    @apply font-mono text-[13px] uppercase leading-none tracking-label text-text;
+  }
+
+  .nav-link {
+    @apply flex items-center gap-2 font-mono text-[11px] uppercase leading-none tracking-label text-muted;
+    transition: color 0.18s ease;
+  }
+
+  .nav-link:hover,
+  .nav-link[data-active="true"] {
+    color: var(--c-text);
+  }
+
+  .nav-index {
+    color: var(--c-hairline);
+    transition: color 0.18s ease;
+  }
+
+  .nav-link[data-active="true"] .nav-index {
+    color: var(--c-accent);
+  }
+
+  /* ---- eyebrow -------------------------------------------------------- */
+
+  .eyebrow-index {
+    @apply font-mono text-[11px] uppercase leading-none tracking-label text-accent;
+  }
+
+  /* ---- metrics -------------------------------------------------------- */
+
+  /* Ruled cells with the value at display weight. As 12px fine print these
+     read as a footnote instead of as the evidence they are. */
+  .metric-row {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1.35rem 0;
+    margin-top: 2.75rem;
+    border-top: 1px solid var(--c-hairline);
+    padding-top: 1.15rem;
+  }
+
+  .metric-cell {
+    padding-left: 1.25rem;
+    border-left: 1px solid var(--c-hairline);
+  }
+
+  /* Two up on narrow screens, so every left-hand cell drops its divider. */
+  .metric-cell:nth-child(odd) {
+    padding-left: 0;
+    border-left: 0;
+  }
+
+  @media (min-width: 640px) {
+    .metric-row {
+      grid-template-columns: none;
+      grid-auto-flow: column;
+      grid-auto-columns: minmax(0, 1fr);
+    }
+
+    .metric-cell:nth-child(odd) {
+      padding-left: 1.25rem;
+      border-left: 1px solid var(--c-hairline);
+    }
+
+    .metric-cell:first-child {
+      padding-left: 0;
+      border-left: 0;
+    }
+  }
+
   .metric-value {
-    @apply font-mono text-[12px] uppercase leading-none tracking-label text-text;
+    display: block;
+    font-family: theme("fontFamily.mono");
+    font-size: 19px;
+    line-height: 1.1;
+    letter-spacing: -0.01em;
+    color: var(--c-text);
+    font-variant-numeric: tabular-nums;
   }
 
   .metric-label {
-    @apply font-mono text-[11px] uppercase leading-[1.35] tracking-label text-muted;
+    @apply mt-2.5 block font-mono text-[11px] uppercase leading-[1.35] tracking-label text-muted;
   }
 
-  /* Single-hue readability scrims. Written by hand rather than with gradient
-     utilities so the stylesheet stays free of Tailwind's transparent-black
-     placeholder value, and so both reference the one --c-base declaration. */
+  /* ---- calls to action ------------------------------------------------ */
+
+  /* A bordered box at label size reads as a disabled form control. Solid
+     accent for the one primary action, a ruled text link for everything else. */
+  .cta-primary {
+    @apply inline-flex h-10 items-center gap-2.5 px-4 font-mono text-[11px] uppercase leading-none tracking-label;
+    background-color: var(--c-accent);
+    color: var(--c-base);
+    transition: opacity 0.18s ease;
+  }
+
+  .topbar .cta-primary {
+    height: 32px;
+  }
+
+  .cta-primary:hover {
+    opacity: 0.82;
+  }
+
+  .cta-quiet {
+    @apply inline-flex items-center gap-2.5 font-mono text-[11px] uppercase leading-none tracking-label text-muted;
+    padding-bottom: 0.55rem;
+    border-bottom: 1px solid var(--c-hairline);
+    transition:
+      color 0.18s ease,
+      border-color 0.18s ease;
+  }
+
+  .cta-quiet:hover {
+    color: var(--c-text);
+    border-color: var(--c-muted);
+  }
+
+  .cta-glyph {
+    transition: transform 0.18s ease;
+  }
+
+  .cta-primary:hover .cta-glyph,
+  .cta-quiet:hover .cta-glyph {
+    transform: translateX(3px);
+  }
+
+  .footer-link {
+    @apply text-[14px] leading-none text-muted;
+    letter-spacing: -0.011em;
+    transition: color 0.18s ease;
+  }
+
+  .footer-link:hover {
+    color: var(--c-text);
+  }
+
+  /* ---- readability scrims --------------------------------------------- */
+
+  /* Written by hand rather than with gradient utilities so the stylesheet
+     stays free of Tailwind's transparent-black placeholder value, and so both
+     reference the one --c-base declaration. */
   .scrim-left {
     background-image: linear-gradient(
       to right,
-      var(--c-base) 0%,
-      color-mix(in srgb, var(--c-base) 88%, transparent) 45%,
+      color-mix(in srgb, var(--c-base) 94%, transparent) 0%,
+      color-mix(in srgb, var(--c-base) 76%, transparent) 48%,
       transparent 100%
     );
   }
@@ -130,8 +349,8 @@
   .scrim-right {
     background-image: linear-gradient(
       to left,
-      var(--c-base) 0%,
-      color-mix(in srgb, var(--c-base) 88%, transparent) 45%,
+      color-mix(in srgb, var(--c-base) 94%, transparent) 0%,
+      color-mix(in srgb, var(--c-base) 76%, transparent) 48%,
       transparent 100%
     );
   }

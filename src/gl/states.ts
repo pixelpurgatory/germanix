@@ -33,7 +33,10 @@ export const LAYOUT_VH = {
   hero: 180,
   section: 140,
   conversion: 100,
-  footer: 12,
+  // The footer is content-sized rather than pinned, so this tracks what it
+  // actually measures at desktop width. If it drifts, every blend centre
+  // shifts with it, because progress is scrollY over the whole document.
+  footer: 42,
   viewport: 100,
 } as const;
 
@@ -87,6 +90,17 @@ export function blendWeights(progress: number): StateWeights {
   const b = smoothstep(BLEND_CENTERS[1] - h, BLEND_CENTERS[1] + h, p);
   const c = smoothstep(BLEND_CENTERS[2] - h, BLEND_CENTERS[2] + h, p);
   return [1 - a, a * (1 - b), b * (1 - c), c];
+}
+
+/** Index of the state carrying the most weight. Drives the active nav item. */
+export function dominantState(progress: number): number {
+  const w = blendWeights(progress);
+  let best = 0;
+  let bestWeight = w[0];
+  if (w[1] > bestWeight) [best, bestWeight] = [1, w[1]];
+  if (w[2] > bestWeight) [best, bestWeight] = [2, w[2]];
+  if (w[3] > bestWeight) best = 3;
+  return best;
 }
 
 /** Progress value that sits in the middle of state `index`'s plateau. */

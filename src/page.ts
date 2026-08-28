@@ -1,28 +1,26 @@
 import { content } from "./content.ts";
-import type { Cta, Metric, Section } from "./content.ts";
+import type { Cta, Metric, NavItem, Section } from "./content.ts";
 import { LAYOUT_VH } from "./gl/states.ts";
 import type { RevealTarget } from "./scroll.ts";
 
 /**
  * Builds the document from `content.ts`. No user-visible string originates
- * here — every one is read off the content object, including the document
+ * here. Every one is read off the content object, including the document
  * title, the meta description and the CTA glyph.
  */
 
-const SHELL = "mx-auto w-full max-w-[1240px] px-6 md:px-10 lg:px-14";
+const SHELL = "mx-auto w-full max-w-[1180px] px-5 md:px-8 lg:px-12";
 const GRID = "grid grid-cols-12 gap-x-6";
 const COLUMN = {
-  left: "col-span-12 md:col-span-7 lg:col-span-5",
-  right: "col-span-12 md:col-span-7 md:col-start-6 lg:col-span-5 lg:col-start-8",
+  left: "col-span-12 md:col-span-8 lg:col-span-6",
+  right: "col-span-12 md:col-span-8 md:col-start-5 lg:col-span-6 lg:col-start-7",
 } as const;
 const SCRIM = {
-  left: "scrim-left pointer-events-none absolute inset-y-0 left-0 w-full md:w-3/4",
-  right: "scrim-right pointer-events-none absolute inset-y-0 right-0 w-full md:w-3/4",
+  left: "scrim-left pointer-events-none absolute inset-y-0 left-0 w-full md:w-3/5",
+  right: "scrim-right pointer-events-none absolute inset-y-0 right-0 w-full md:w-3/5",
 } as const;
 
-const HEADLINE_SECTION =
-  "mt-7 text-[clamp(1.7rem,3.1vw,2.55rem)] font-medium leading-[1.08] tracking-tightest text-text";
-const BODY = "mt-6 max-w-prose text-[15px] leading-[1.66] text-text";
+const BODY = "mt-6 max-w-prose text-body text-text";
 
 function el<K extends keyof HTMLElementTagNameMap>(
   tag: K,
@@ -35,76 +33,93 @@ function el<K extends keyof HTMLElementTagNameMap>(
   return node;
 }
 
-function ctaLink(cta: Cta, emphasis: "primary" | "quiet"): HTMLAnchorElement {
-  const tone =
-    emphasis === "primary"
-      ? "border-accent text-accent hover:bg-accent hover:text-base"
-      : "border-hairline text-muted hover:border-muted hover:text-text";
-  const link = el(
-    "a",
-    `mt-9 inline-flex items-center gap-3 border px-5 py-3 font-mono text-[11px] uppercase leading-none tracking-label transition-colors duration-200 ${tone}`,
-  );
-  link.href = cta.href;
-  link.append(el("span", "", cta.label), el("span", "", content.ui.ctaGlyph));
-  return link;
+function link(cta: Cta, className: string): HTMLAnchorElement {
+  const node = el("a", className);
+  node.href = cta.href;
+  return node;
 }
 
-function metricList(metrics: readonly Metric[], extra = ""): HTMLElement {
-  const list = el(
-    "ul",
-    `mt-9 grid grid-cols-2 gap-x-6 gap-y-6 border-t border-hairline pt-6 sm:grid-cols-3 ${extra}`,
-  );
+/** Solid accent for primary, ruled text link for secondary. */
+function ctaLink(cta: Cta, emphasis: "primary" | "quiet"): HTMLAnchorElement {
+  const node = link(cta, emphasis === "primary" ? "cta-primary" : "cta-quiet");
+  node.append(el("span", "", cta.label), el("span", "cta-glyph", content.ui.ctaGlyph));
+  return node;
+}
+
+/**
+ * Metrics as a ruled row. The value carries the weight; the caption below it
+ * stays at label size so the row reads as evidence rather than fine print.
+ */
+function metricRow(metrics: readonly Metric[]): HTMLElement {
+  const list = el("ul", "metric-row");
   for (const metric of metrics) {
-    const item = el("li", "flex flex-col gap-2.5");
+    const item = el("li", "metric-cell");
     item.append(el("span", "metric-value", metric.value), el("span", "metric-label", metric.label));
     list.append(item);
   }
   return list;
 }
 
+/** Index plus label, with a rule that runs out to the edge of the column. */
+function eyebrow(index: string, label: string): HTMLElement {
+  const row = el("div", "flex items-center gap-4");
+  if (index) row.append(el("span", "eyebrow-index", index));
+  if (label) row.append(el("span", "label", label));
+  row.append(el("span", "rule"));
+  return row;
+}
+
+function buildNav(): HTMLElement {
+  const nav = el("nav", "topbar");
+  const shell = el("div", `${SHELL} flex h-full items-center justify-between gap-8`);
+
+  const brand = link({ label: content.site.name, href: "#" }, "topbar-brand");
+  brand.textContent = content.site.name;
+
+  const list = el("ul", "hidden items-center gap-7 lg:flex");
+  for (const entry of content.nav.items satisfies readonly NavItem[]) {
+    const anchor = link({ label: entry.label, href: entry.href }, "nav-link");
+    anchor.dataset["nav"] = entry.index;
+    anchor.append(el("span", "nav-index", entry.index), el("span", "", entry.label));
+    const li = el("li", "");
+    li.append(anchor);
+    list.append(li);
+  }
+
+  shell.append(brand, list, ctaLink(content.nav.cta, "primary"));
+  nav.append(shell);
+  return nav;
+}
+
 function buildHero(): HTMLElement {
   const hero = content.hero;
-  const header = el("header", "relative", undefined);
+  const header = el("header", "relative");
   header.style.height = "var(--h-hero)";
 
   const inner = el(
     "div",
-    "sticky top-0 flex h-screen flex-col justify-between overflow-hidden py-8 md:py-12",
+    "sticky top-0 flex h-screen flex-col justify-end overflow-hidden pb-10 pt-28 md:pb-14",
   );
   inner.append(el("div", SCRIM.left));
 
-  const topBar = el("div", `${SHELL} relative flex items-baseline justify-between gap-6`);
-  topBar.append(
-    el("span", "font-mono text-[12px] uppercase tracking-label text-text", content.site.name),
-    el("span", "label hidden sm:block", hero.label),
-  );
-
-  const middle = el("div", `${SHELL} relative`);
+  const shell = el("div", `${SHELL} relative`);
   const grid = el("div", GRID);
-  const column = el("div", "col-span-12 lg:col-span-8");
+  const column = el("div", "col-span-12 lg:col-span-9");
+
   column.append(
-    el(
-      "h1",
-      "text-[clamp(2.3rem,5.4vw,4.3rem)] font-medium leading-[0.99] tracking-tightest text-text",
-      hero.headline,
-    ),
-    el("p", "mt-8 max-w-prose text-[16px] leading-[1.6] text-text", hero.body),
+    eyebrow("", hero.label),
+    el("h1", "mt-8 text-display text-text", hero.headline),
+    el("p", `${BODY} mt-7`, hero.body),
+    metricRow(hero.meta),
   );
+
   grid.append(column);
-  middle.append(grid);
+  shell.append(grid);
 
-  const bottom = el(
-    "div",
-    `${SHELL} relative flex flex-wrap items-baseline justify-between gap-x-6 gap-y-2`,
-  );
-  bottom.append(
-    // The label class is leading-none, which collides with itself once this
-    // list wraps on a narrow viewport.
-    el("span", "label leading-[1.6]", hero.meta.join(` ${content.ui.metaSeparator} `)),
-    el("span", "label text-accent", hero.scrollCue),
-  );
+  const cue = el("div", `${SHELL} relative mt-10 flex items-center gap-3`);
+  cue.append(el("span", "scroll-tick"), el("span", "label text-accent", hero.scrollCue));
 
-  inner.append(topBar, middle, bottom);
+  inner.append(shell, cue);
   header.append(inner);
   return header;
 }
@@ -122,21 +137,18 @@ function buildSection(section: Section): HTMLElement {
   const grid = el("div", GRID);
   const column = el("div", COLUMN[section.align]);
 
-  const labelRow = el("div", "flex items-baseline gap-4");
-  labelRow.append(
-    el("span", "font-mono text-[11px] leading-none tracking-label text-accent", section.index),
-    el("span", "label", section.label),
-  );
-
-  const headline = el("h2", HEADLINE_SECTION, section.headline);
+  const headline = el("h2", "mt-8 text-headline text-text", section.headline);
   headline.id = `${section.id}-headline`;
 
+  const cta = ctaLink(section.cta, "primary");
+  cta.classList.add("mt-10");
+
   column.append(
-    labelRow,
+    eyebrow(section.index, section.label),
     headline,
     el("p", BODY, section.body),
-    metricList(section.metrics),
-    ctaLink(section.cta, "primary"),
+    metricRow(section.metrics),
+    cta,
   );
 
   grid.append(column);
@@ -155,20 +167,16 @@ function buildConversion(): HTMLElement {
   const inner = el("div", "flex min-h-[inherit] items-center py-24");
   const shell = el("div", SHELL);
   const grid = el("div", GRID);
-  const column = el("div", "col-span-12 lg:col-span-7");
+  const column = el("div", "col-span-12 lg:col-span-8");
 
-  column.append(el("span", "label", band.label));
   column.append(
-    el(
-      "h2",
-      "mt-7 text-[clamp(1.9rem,3.4vw,2.8rem)] font-medium leading-[1.06] tracking-tightest text-text",
-      band.headline,
-    ),
+    eyebrow("", band.label),
+    el("h2", "mt-8 text-headline text-text", band.headline),
     el("p", BODY, band.body),
-    metricList(band.meta),
+    metricRow(band.meta),
   );
 
-  const actions = el("div", "flex flex-wrap items-center gap-4");
+  const actions = el("div", "mt-10 flex flex-wrap items-center gap-x-8 gap-y-4");
   actions.append(ctaLink(band.cta, "primary"), ctaLink(band.secondary, "quiet"));
   column.append(actions);
 
@@ -180,15 +188,68 @@ function buildConversion(): HTMLElement {
 }
 
 function buildFooter(): HTMLElement {
-  const footer = el("footer", "flex items-center border-t border-hairline bg-base");
-  footer.style.minHeight = "var(--h-footer)";
-  const shell = el("div", `${SHELL} flex flex-wrap items-baseline justify-between gap-4 py-6`);
-  shell.append(
+  const footer = el("footer", "relative border-t border-hairline bg-base");
+  const shell = el("div", `${SHELL} py-14`);
+
+  const grid = el("div", `${GRID} gap-y-10`);
+  const brand = el("div", "col-span-12 lg:col-span-3");
+  brand.append(el("span", "topbar-brand", content.site.name));
+
+  grid.append(brand);
+  for (const col of content.footer.columns) {
+    const cell = el("div", "col-span-6 md:col-span-4 lg:col-span-3");
+    cell.append(el("span", "label", col.heading));
+    const list = el("ul", "mt-5 flex flex-col gap-3");
+    for (const item of col.items) {
+      const anchor = link(item, "footer-link");
+      anchor.textContent = item.label;
+      const li = el("li", "");
+      li.append(anchor);
+      list.append(li);
+    }
+    cell.append(list);
+    grid.append(cell);
+  }
+
+  const base = el(
+    "div",
+    "mt-14 flex flex-wrap items-baseline justify-between gap-x-6 gap-y-2 border-t border-hairline pt-6",
+  );
+  base.append(
     el("span", "label text-text", content.footer.rule),
     el("span", "label", content.footer.note),
   );
+
+  shell.append(grid, base);
   footer.append(shell);
   return footer;
+}
+
+/**
+ * Marks the nav entry for the state currently on screen. Returns a setter so
+ * the query runs once rather than on every frame.
+ */
+export function createNavHighlighter(): (index: number) => void {
+  const links = Array.from(document.querySelectorAll<HTMLElement>("[data-nav]"));
+  let current = -1;
+  return (index: number): void => {
+    if (index === current) return;
+    current = index;
+    links.forEach((node, i) => {
+      node.dataset["active"] = String(i === index);
+    });
+  };
+}
+
+/** Fixed hairline column rules, aligned to the content grid. */
+function buildGridRules(): HTMLElement {
+  const layer = el("div", "grid-rules");
+  layer.setAttribute("aria-hidden", "true");
+  const shell = el("div", `${SHELL} h-full`);
+  const inner = el("div", "grid-rules-inner");
+  shell.append(inner);
+  layer.append(shell);
+  return layer;
 }
 
 function applyLayoutVars(): void {
@@ -219,7 +280,14 @@ export function buildPage(mount: HTMLElement): readonly RevealTarget[] {
   const hero = buildHero();
   const sections = content.sections.map(buildSection);
 
-  mount.replaceChildren(hero, ...sections, buildConversion(), buildFooter());
+  mount.replaceChildren(
+    buildGridRules(),
+    buildNav(),
+    hero,
+    ...sections,
+    buildConversion(),
+    buildFooter(),
+  );
 
   return [
     { node: hero, heightVh: LAYOUT_VH.hero },

@@ -3,7 +3,8 @@ import { GLCore, prefersReducedMotion } from "./gl/core.ts";
 import { ParticleSystem, selectTier } from "./gl/system.ts";
 import { attachReveals, createScrollDriver } from "./scroll.ts";
 import { createPointerDriver } from "./pointer.ts";
-import { buildPage } from "./page.ts";
+import { buildPage, createNavHighlighter } from "./page.ts";
+import { dominantState } from "./gl/states.ts";
 
 const canvas = document.querySelector<HTMLCanvasElement>("#gl");
 const mount = document.querySelector<HTMLElement>("#page");
@@ -25,7 +26,8 @@ if (prefersReducedMotion()) {
   system.setNumber("uScanY", 0);
   core.renderOnce();
 } else {
-  const scroll = createScrollDriver();
+  const setActiveNav = createNavHighlighter();
+  const scroll = createScrollDriver((p) => setActiveNav(dominantState(p)));
   const pointer = createPointerDriver(core.camera);
   attachReveals(reveals);
   let velocity = 0;

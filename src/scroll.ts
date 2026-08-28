@@ -21,8 +21,13 @@ function clamp(v: number, lo: number, hi: number): number {
 /**
  * Maps whole-page scroll onto a single scalar. Nothing else in the app reads
  * scrollY; every state change downstream is a function of this one number.
+ *
+ * `onProgress` fires from the scroll callback rather than the render loop, so
+ * anything driven by it (the nav highlight) stays correct while the RAF loop
+ * is suspended and responds to the raw scroll position instead of the eased
+ * value the geometry follows.
  */
-export function createScrollDriver(): ScrollDriver {
+export function createScrollDriver(onProgress?: (progress: number) => void): ScrollDriver {
   const proxy = { p: 0 };
   let velocity = 0;
 
@@ -36,6 +41,7 @@ export function createScrollDriver(): ScrollDriver {
       scrub: 0.65,
       onUpdate: (self) => {
         velocity = clamp(self.getVelocity() / VELOCITY_SCALE, -1, 1);
+        if (onProgress) onProgress(self.progress);
       },
     },
   });

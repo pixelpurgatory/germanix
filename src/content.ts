@@ -1,7 +1,7 @@
 /**
  * Every user-visible string in the application, including the document title,
  * the meta description and the CTA glyph. Nothing is hardcoded in markup or in
- * page.ts — if a reader can see it, it is declared here.
+ * page.ts. If a reader can see it, it is declared here.
  */
 
 export interface Metric {
@@ -10,6 +10,12 @@ export interface Metric {
 }
 
 export interface Cta {
+  readonly label: string;
+  readonly href: string;
+}
+
+export interface NavItem {
+  readonly index: string;
   readonly label: string;
   readonly href: string;
 }
@@ -29,7 +35,7 @@ export interface Hero {
   readonly label: string;
   readonly headline: string;
   readonly body: string;
-  readonly meta: readonly string[];
+  readonly meta: readonly Metric[];
   readonly scrollCue: string;
 }
 
@@ -43,21 +49,30 @@ export interface Conversion {
   readonly meta: readonly Metric[];
 }
 
+export interface FooterColumn {
+  readonly heading: string;
+  readonly items: readonly Cta[];
+}
+
 export interface Content {
   readonly site: {
     readonly name: string;
     readonly title: string;
     readonly description: string;
-    readonly tagline: string;
   };
   readonly ui: {
     readonly ctaGlyph: string;
     readonly metaSeparator: string;
   };
+  readonly nav: {
+    readonly items: readonly NavItem[];
+    readonly cta: Cta;
+  };
   readonly hero: Hero;
   readonly sections: readonly Section[];
   readonly conversion: Conversion;
   readonly footer: {
+    readonly columns: readonly FooterColumn[];
     readonly rule: string;
     readonly note: string;
   };
@@ -66,10 +81,9 @@ export interface Content {
 export const content: Content = {
   site: {
     name: "NORDWERK",
-    title: "NORDWERK — Applied AI systems",
+    title: "NORDWERK / Applied AI systems",
     description:
-      "NORDWERK builds business automation, immersive 3D, voice and chat operators, and computer vision systems for enterprise operations teams.",
-    tagline: "Applied AI systems for operations teams.",
+      "NORDWERK builds and runs business automation, real-time 3D, voice and chat agents, and edge vision systems for enterprise operations teams in Hamburg and Rotterdam.",
   },
 
   ui: {
@@ -77,11 +91,26 @@ export const content: Content = {
     metaSeparator: "/",
   },
 
+  nav: {
+    items: [
+      { index: "01", label: "Automation", href: "#automation" },
+      { index: "02", label: "Immersive", href: "#immersive" },
+      { index: "03", label: "Operators", href: "#operators" },
+      { index: "04", label: "Vision", href: "#vision" },
+    ],
+    cta: { label: "Book assessment", href: "#engagement" },
+  },
+
   hero: {
-    label: "APPLIED AI SYSTEMS — SINCE 2019",
-    headline: "Automation that survives contact with your operation.",
-    body: "We build and run the systems enterprise teams depend on daily. Four practices, one engineering standard, and a deployment record we publish rather than describe.",
-    meta: ["HAMBURG", "ROTTERDAM", "27 ENGINEERS", "SOC 2 TYPE II"],
+    label: "APPLIED AI SYSTEMS",
+    headline: "Enterprise AI that makes it past the pilot.",
+    body: "We are a 27 person engineering shop in Hamburg and Rotterdam. We build automation, interfaces, agents and vision systems, and then we run them. Everything we ship belongs to you, source included.",
+    meta: [
+      { value: "2019", label: "FOUNDED" },
+      { value: "27", label: "ENGINEERS" },
+      { value: "SOC 2", label: "TYPE II" },
+      { value: "DE / NL", label: "OFFICES" },
+    ],
     scrollCue: "SCROLL",
   },
 
@@ -90,36 +119,36 @@ export const content: Content = {
       id: "automation",
       index: "01",
       label: "CORE AUTOMATION / CRM KERNELS",
-      headline: "Bots, assistants and CRM kernels built on your real process.",
-      body: "We map the process you actually run — not the one on the org chart — then replace its manual joints with services you own outright. Custom CRM kernels, internal assistants and routing logic, deployed into your infrastructure and handed over with the source.",
+      headline: "The parts your team still does by hand.",
+      body: "Custom CRM kernels, internal assistants, routing and approval logic. We start by sitting with the people doing the work, because the documented process and the one in daily use have usually drifted apart. Everything runs on your infrastructure and the source is yours.",
       metrics: [
         { value: "142", label: "PROCESSES IN PRODUCTION" },
         { value: "8.4M", label: "EVENTS ROUTED DAILY" },
         { value: "31 MS", label: "MEDIAN KERNEL LATENCY" },
       ],
-      cta: { label: "Scope an automation audit", href: "#engagement" },
+      cta: { label: "Book an automation audit", href: "#engagement" },
       align: "left",
     },
     {
       id: "immersive",
       index: "02",
       label: "IMMERSIVE WEB / REAL-TIME 3D",
-      headline: "High-end 3D that holds frame rate on a four-year-old laptop.",
-      body: "Real-time product configurators, spatial brand work and interactive documentation. Every build is budgeted before it is designed — one context, one draw path, procedural geometry over downloaded assets — because a showpiece that stutters is not a showpiece.",
+      headline: "Real-time 3D that still hits 60fps on a four-year-old laptop.",
+      body: "Product configurators, spatial brand work, interactive documentation. We budget the frame before anyone opens a design tool. One context, one draw path, geometry generated in the shader instead of downloaded. If it stutters on the client's own machine, it does not matter how good it looked in the studio.",
       metrics: [
         { value: "58.7 FPS", label: "P95, MID-TIER INTEGRATED GPU" },
         { value: "1.9 S", label: "LARGEST CONTENTFUL PAINT" },
         { value: "41", label: "WEBGL BUILDS SHIPPED" },
       ],
-      cta: { label: "Read the build constraints", href: "#engagement" },
+      cta: { label: "See how we budget a build", href: "#engagement" },
       align: "right",
     },
     {
       id: "operators",
       index: "03",
       label: "VOICE & CHAT OPERATORS",
-      headline: "Operators that hold a conversation, not a script tree.",
-      body: "Lifelike chat and voice agents that carry context across channels, escalate on their own judgement, and log every decision for review. Deployed as cognitive teams — a triage layer, a specialist layer, and a supervisor that answers for both.",
+      headline: "Agents that can handle the second question.",
+      body: "Chat and voice agents that keep context across channels and know when to hand a call off. We run them in layers: a triage agent, a specialist behind it, and a supervisor reading transcripts. Every decision gets logged, which is usually the first thing your compliance team asks about.",
       metrics: [
         { value: "97.3%", label: "INTENT RESOLUTION, FIRST PASS" },
         { value: "620 MS", label: "VOICE TURN LATENCY" },
@@ -132,10 +161,10 @@ export const content: Content = {
       id: "vision",
       index: "04",
       label: "VISION & SPATIAL ANALYTICS",
-      headline: "Cameras that produce decisions, not more footage.",
-      body: "Computer vision on the edge: occupancy, flow, safety compliance and yield inspection, computed on the device and summarised upstream. Video never leaves the site unless you ask it to, which is usually the difference between approval and a long legal review.",
+      headline: "Nobody has time to watch the footage.",
+      body: "Occupancy, flow, safety compliance and yield inspection. Inference runs on the device and only the summary travels, so the video stays on site unless you decide otherwise. That detail is usually what gets the project through legal.",
       metrics: [
-        { value: "1,284", label: "EDGE CAMERAS UNDER MANAGEMENT" },
+        { value: "1,284", label: "EDGE CAMERAS MANAGED" },
         { value: "99.1%", label: "DETECTION PRECISION" },
         { value: "6.3 W", label: "DRAW PER INFERENCE NODE" },
       ],
@@ -148,18 +177,43 @@ export const content: Content = {
     id: "engagement",
     label: "ENGAGEMENT",
     headline: "Start with a two-week technical assessment.",
-    body: "We read your systems, instrument the process, and return a costed build plan with the parts we would not build. Fixed fee, credited against the first delivery phase.",
+    body: "We read your systems, instrument the process, and come back with a costed plan. It includes the parts we think you should not build. Fixed fee, credited against the first delivery phase.",
     cta: { label: "Book the assessment", href: "mailto:build@nordwerk.systems" },
-    secondary: { label: "Request the deployment record", href: "mailto:build@nordwerk.systems" },
+    secondary: { label: "See the deployment record", href: "mailto:build@nordwerk.systems" },
     meta: [
       { value: "14 DAYS", label: "ASSESSMENT WINDOW" },
-      { value: "€ 18,400", label: "FIXED FEE, CREDITED" },
+      { value: "18,400 EUR", label: "FIXED FEE, CREDITED" },
       { value: "3", label: "SLOTS PER QUARTER" },
     ],
   },
 
   footer: {
+    columns: [
+      {
+        heading: "PRACTICES",
+        items: [
+          { label: "Core automation", href: "#automation" },
+          { label: "Immersive web", href: "#immersive" },
+          { label: "Voice and chat", href: "#operators" },
+          { label: "Vision systems", href: "#vision" },
+        ],
+      },
+      {
+        heading: "OFFICES",
+        items: [
+          { label: "Hamburg, Hammerbrook", href: "#engagement" },
+          { label: "Rotterdam, Katendrecht", href: "#engagement" },
+        ],
+      },
+      {
+        heading: "CONTACT",
+        items: [
+          { label: "build@nordwerk.systems", href: "mailto:build@nordwerk.systems" },
+          { label: "Deployment record", href: "mailto:build@nordwerk.systems" },
+        ],
+      },
+    ],
     rule: "NORDWERK SYSTEMS GMBH",
-    note: "HAMBURG / ROTTERDAM — BUILD@NORDWERK.SYSTEMS",
+    note: "ALL SYSTEMS DELIVERED WITH SOURCE",
   },
 };
