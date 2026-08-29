@@ -36,14 +36,14 @@ for (let i = 0; i <= STEPS; i++) {
   const p = i / STEPS;
   const w = blendWeights(p);
 
-  const sum = w[0] + w[1] + w[2] + w[3];
+  const sum = w[0] + w[1] + w[2] + w[3] + w[4];
   const sumError = Math.abs(sum - 1);
   if (sumError > maxSumError) maxSumError = sumError;
   if (sumError > SUM_TOLERANCE) {
     record(`sum ${sum.toFixed(6)} at p=${p.toFixed(4)} (error ${sumError.toExponential(2)})`);
   }
 
-  if (w[0] < 0 || w[1] < 0 || w[2] < 0 || w[3] < 0) {
+  if (w[0] < 0 || w[1] < 0 || w[2] < 0 || w[3] < 0 || w[4] < 0) {
     record(`negative weight at p=${p.toFixed(4)}: ${w.join(", ")}`);
   }
 
@@ -53,6 +53,7 @@ for (let i = 0; i <= STEPS; i++) {
       Math.abs(w[1] - prev[1]),
       Math.abs(w[2] - prev[2]),
       Math.abs(w[3] - prev[3]),
+      Math.abs(w[4] - prev[4]),
     );
     if (worst > maxDelta) maxDelta = worst;
     if (worst > MAX_STEP_DELTA) {
@@ -63,10 +64,11 @@ for (let i = 0; i <= STEPS; i++) {
   prev = w;
 }
 
-// The exact sum-to-one relies on the three bands never touching each other.
-// If a layout change slid two boundaries together, the weights would still be
-// smooth but would stop summing to 1 — assert the precondition directly.
+// The exact sum-to-one relies on the bands never touching each other. If a
+// layout change slid two boundaries together, the weights would still be
+// smooth but would stop summing to 1, so assert the precondition directly.
 const half = BLEND_OVERLAP / 2;
+const last = BLEND_CENTERS.length - 1;
 for (let i = 1; i < BLEND_CENTERS.length; i++) {
   const lower = BLEND_CENTERS[i - 1] ?? 0;
   const upper = BLEND_CENTERS[i] ?? 0;
@@ -74,19 +76,17 @@ for (let i = 1; i < BLEND_CENTERS.length; i++) {
     record(`transition bands ${i - 1} and ${i} overlap (${lower} vs ${upper})`);
   }
 }
-if ((BLEND_CENTERS[0] ?? 0) - half <= 0 || (BLEND_CENTERS[2] ?? 1) + half >= 1) {
+if ((BLEND_CENTERS[0] ?? 0) - half <= 0 || (BLEND_CENTERS[last] ?? 1) + half >= 1) {
   record("a transition band runs past the ends of uProgress");
 }
 
 // Every state must actually participate in its transition band.
-const bands: ReadonlyArray<readonly [number, number, number]> = [
-  [BLEND_CENTERS[0], 0, 1],
-  [BLEND_CENTERS[1], 1, 2],
-  [BLEND_CENTERS[2], 2, 3],
-];
-for (const [center, lo, hi] of bands) {
+for (let i = 0; i < BLEND_CENTERS.length; i++) {
+  const center = BLEND_CENTERS[i] ?? 0;
+  const lo = i;
+  const hi = i + 1;
   const w = blendWeights(center);
-  const a = [w[0], w[1], w[2], w[3]];
+  const a = [w[0], w[1], w[2], w[3], w[4]];
   const wLo = a[lo] ?? 0;
   const wHi = a[hi] ?? 0;
   if (wLo <= 0 || wHi <= 0) {
@@ -96,7 +96,7 @@ for (const [center, lo, hi] of bands) {
 
 // Structural guard: the GLSL mirror must still read the shared uniforms rather
 // than a divergent set of inlined literals.
-for (const token of ["centers.x", "centers.y", "centers.z", "overlap", "smoothstep"]) {
+for (const token of ["centers.x", "centers.y", "centers.z", "centers.w", "overlap", "smoothstep"]) {
   if (!BLEND_GLSL.includes(token)) {
     record(`BLEND_GLSL no longer references "${token}" — TS/GLSL mirrors have drifted`);
   }

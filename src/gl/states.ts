@@ -1,5 +1,8 @@
 /**
- * The four visual states and the single blend that fuses them.
+ * The five visual states and the single blend that fuses them.
+ *
+ * The dragonfly owns the hero; A to D still map 1:1 onto the four sections, so
+ * adding it did not disturb the copy-to-geometry pairing.
  *
  * This module is the sole authority on blend windows. The TypeScript function
  * `blendWeights` and the GLSL chunk `BLEND_GLSL` implement the identical
@@ -10,14 +13,17 @@
  * Deliberately free of any `three` import so plain Node can load it.
  */
 
-export type StateWeights = readonly [number, number, number, number];
+import { DRAGONFLY_GLSL } from "./shaders/dragonfly.glsl.ts";
+
+export type StateWeights = readonly [number, number, number, number, number];
 
 export interface StateMeta {
-  readonly key: "A" | "B" | "C" | "D";
+  readonly key: "Z" | "A" | "B" | "C" | "D";
   readonly title: string;
 }
 
 export const STATES: readonly StateMeta[] = [
+  { key: "Z", title: "dragonfly" },
   { key: "A", title: "lattice" },
   { key: "B", title: "terrain" },
   { key: "C", title: "shell" },
@@ -47,21 +53,25 @@ const SCROLL_VH = TOTAL_VH - LAYOUT_VH.viewport;
 /** Width of each transition band. Every state has nonzero weight inside it. */
 export const BLEND_OVERLAP = 0.08;
 
-/** Scroll progress at the boundary after section `i` (1-based). */
+/** Scroll progress where section `i + 1` starts. `i` is 0 based. */
 function boundary(i: number): number {
   return (LAYOUT_VH.hero + i * LAYOUT_VH.section) / SCROLL_VH;
 }
 
 /**
- * Centres of the three transition bands along uProgress (0 -> 1).
+ * Centres of the four transition bands along uProgress (0 -> 1).
  *
  * Each band *ends* on a section boundary rather than being centred on it. A
  * section's copy pins the moment its boundary is crossed, so a centred band
- * would leave the morph still resolving through the first half of the pin —
- * the reader gets a half-blended cloud while reading about terrain. Ending the
+ * would leave the morph still resolving through the first half of the pin, and
+ * the reader gets a half blended cloud while reading about terrain. Ending the
  * band there means the state is fully settled exactly as its copy locks in.
+ *
+ * The first band ends where section 1 begins, which is what hands the whole
+ * hero to the dragonfly.
  */
-export const BLEND_CENTERS: readonly [number, number, number] = [
+export const BLEND_CENTERS: readonly [number, number, number, number] = [
+  boundary(0) - BLEND_OVERLAP / 2,
   boundary(1) - BLEND_OVERLAP / 2,
   boundary(2) - BLEND_OVERLAP / 2,
   boundary(3) - BLEND_OVERLAP / 2,
@@ -77,9 +87,9 @@ export function smoothstep(edge0: number, edge1: number, x: number): number {
 }
 
 /**
- * Weights for states A, B, C, D at a given scroll progress.
+ * Weights for the dragonfly and states A, B, C, D at a given scroll progress.
  *
- * Because the three bands never overlap one another, the four terms telescope
+ * Because the four bands never overlap one another, the five terms telescope
  * to exactly 1 at every p: outside a band the neighbouring gates are hard 0/1,
  * inside a band the two live terms are `1 - s` and `s`.
  */
@@ -89,38 +99,45 @@ export function blendWeights(progress: number): StateWeights {
   const a = smoothstep(BLEND_CENTERS[0] - h, BLEND_CENTERS[0] + h, p);
   const b = smoothstep(BLEND_CENTERS[1] - h, BLEND_CENTERS[1] + h, p);
   const c = smoothstep(BLEND_CENTERS[2] - h, BLEND_CENTERS[2] + h, p);
-  return [1 - a, a * (1 - b), b * (1 - c), c];
+  const d = smoothstep(BLEND_CENTERS[3] - h, BLEND_CENTERS[3] + h, p);
+  return [1 - a, a * (1 - b), b * (1 - c), c * (1 - d), d];
 }
 
-/** Index of the state carrying the most weight. Drives the active nav item. */
+/**
+ * Index of the state carrying the most weight. 0 is the dragonfly, so the nav
+ * (which only lists the four sections) subtracts one.
+ */
 export function dominantState(progress: number): number {
   const w = blendWeights(progress);
   let best = 0;
-  let bestWeight = w[0];
-  if (w[1] > bestWeight) [best, bestWeight] = [1, w[1]];
-  if (w[2] > bestWeight) [best, bestWeight] = [2, w[2]];
-  if (w[3] > bestWeight) best = 3;
+  for (let i = 1; i < w.length; i++) {
+    if ((w[i] ?? 0) > (w[best] ?? 0)) best = i;
+  }
   return best;
 }
 
 /** Progress value that sits in the middle of state `index`'s plateau. */
 export function plateauCenter(index: number): number {
   const h = BLEND_OVERLAP * 0.5;
-  const [c0, c1, c2] = BLEND_CENTERS;
-  if (index <= 0) return (c0 - h) * 0.5;
-  if (index === 1) return (c0 + h + (c1 - h)) * 0.5;
-  if (index === 2) return (c1 + h + (c2 - h)) * 0.5;
-  return (c2 + h + 1) * 0.5;
+  const lo = index <= 0 ? 0 : (BLEND_CENTERS[index - 1] ?? 0) + h;
+  const hi = index >= BLEND_CENTERS.length ? 1 : (BLEND_CENTERS[index] ?? 1) - h;
+  return (lo + hi) * 0.5;
 }
 
-/** GLSL mirror of `blendWeights`. Reads uBlendCenters / uBlendOverlap. */
+/**
+ * GLSL mirror of `blendWeights`. Returns the four smoothstep gates; main()
+ * telescopes them into the five weights exactly as the TS side does. GLSL has
+ * no vec5, and returning the gates keeps the two mirrors line for line.
+ */
 export const BLEND_GLSL = /* glsl */ `
-vec4 blendWeights(float p, vec3 centers, float overlap) {
+vec4 blendGates(float p, vec4 centers, float overlap) {
   float h = overlap * 0.5;
-  float a = smoothstep(centers.x - h, centers.x + h, p);
-  float b = smoothstep(centers.y - h, centers.y + h, p);
-  float c = smoothstep(centers.z - h, centers.z + h, p);
-  return vec4(1.0 - a, a * (1.0 - b), b * (1.0 - c), c);
+  return vec4(
+    smoothstep(centers.x - h, centers.x + h, p),
+    smoothstep(centers.y - h, centers.y + h, p),
+    smoothstep(centers.z - h, centers.z + h, p),
+    smoothstep(centers.w - h, centers.w + h, p)
+  );
 }
 `;
 
@@ -284,6 +301,7 @@ vec3 stateD(vec3 grid, vec3 seed, float id) {
 
 export const STATES_GLSL = [
   STATE_SUPPORT_GLSL,
+  DRAGONFLY_GLSL,
   STATE_A_GLSL,
   STATE_B_GLSL,
   STATE_C_GLSL,

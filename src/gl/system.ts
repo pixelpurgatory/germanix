@@ -7,6 +7,7 @@ import {
   ShaderMaterial,
   Vector2,
   Vector3,
+  Vector4,
 } from "three";
 import { PALETTE } from "./core.ts";
 import { BLEND_CENTERS, BLEND_OVERLAP } from "./states.ts";
@@ -58,6 +59,13 @@ export class ParticleSystem {
     const count = gx * gy * gz;
     this.count = count;
 
+    // Wings 70%, abdomen 18%, thorax 7%, head and eyes the remainder. Rounded
+    // to whole instances so the shader's index comparisons are exact.
+    const wingEnd = Math.floor(count * 0.7 / 4) * 4;
+    const abdomenEnd = wingEnd + Math.floor(count * 0.18 / 2) * 2;
+    const thoraxEnd = abdomenEnd + Math.floor(count * 0.07);
+    const BODY = { wingEnd, abdomenEnd, thoraxEnd };
+
     const geometry = new PlaneGeometry(1, 1);
     const ids = new Float32Array(count);
     const seeds = new Float32Array(count * 3);
@@ -95,7 +103,7 @@ export class ParticleSystem {
       uniforms: {
         uTime: { value: 0 },
         uProgress: { value: 0 },
-        uBlendCenters: { value: new Vector3(...BLEND_CENTERS) },
+        uBlendCenters: { value: new Vector4(...BLEND_CENTERS) },
         uBlendOverlap: { value: BLEND_OVERLAP },
         uPointer: { value: new Vector3(0, 0, 0) },
         uPointerStrength: { value: 0 },
@@ -108,6 +116,13 @@ export class ParticleSystem {
         uCellStep: { value: new Vector2(1 / gx, 1 / gz) },
         // Particles available per cube edge in state D: 32 cells * 12 edges.
         uEdgeSamples: { value: Math.max(2, Math.floor(count / (32 * 12))) },
+        // Dragonfly body-part boundaries in instance-index space. The wings
+        // take most of the budget because the venation is what sells it.
+        uWingCount: { value: BODY.wingEnd },
+        uAbdomenEnd: { value: BODY.abdomenEnd },
+        uThoraxEnd: { value: BODY.thoraxEnd },
+        uThoraxCount: { value: BODY.thoraxEnd - BODY.abdomenEnd },
+        uAspect: { value: 1.6 },
         uSize: { value: 0.05 },
         uChroma: { value: 0.17 },
         uChromaMix: { value: 0.38 },

@@ -24,10 +24,13 @@ if (prefersReducedMotion()) {
   // Static state A: uProgress pinned to 0, no scroll morph, one frame then stop.
   system.setNumber("uProgress", 0);
   system.setNumber("uScanY", 0);
+  system.setNumber("uAspect", core.camera.aspect);
   core.renderOnce();
 } else {
   const setActiveNav = createNavHighlighter();
-  const scroll = createScrollDriver((p) => setActiveNav(dominantState(p)));
+  // State 0 is the dragonfly, which owns the hero and has no nav entry, so the
+  // four listed practices sit one index behind the state list.
+  const scroll = createScrollDriver((p) => setActiveNav(dominantState(p) - 1));
   const pointer = createPointerDriver(core.camera);
   attachReveals(reveals);
   let velocity = 0;
@@ -37,6 +40,7 @@ if (prefersReducedMotion()) {
     velocity += (scroll.velocity - velocity) * VELOCITY_FOLLOW;
 
     system.setNumber("uTime", elapsed);
+    system.setNumber("uAspect", core.camera.aspect);
     system.setNumber("uProgress", scroll.progress);
     system.setNumber("uScrollVelocity", velocity);
     system.setNumber("uPointerStrength", pointer.strength);
