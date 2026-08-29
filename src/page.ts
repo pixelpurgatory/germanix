@@ -1,5 +1,6 @@
-import { content } from "./content.ts";
 import type { Cta, Metric, NavItem, Section, WorkItem } from "./content.ts";
+import { LOCALES, LOCALE_LABELS } from "./content.ts";
+import { getLocale, setLocale, t } from "./locale.ts";
 import { LAYOUT_VH } from "./gl/states.ts";
 import type { RevealTarget } from "./scroll.ts";
 
@@ -42,7 +43,7 @@ function link(cta: Cta, className: string): HTMLAnchorElement {
 /** Solid accent for primary, ruled text link for secondary. */
 function ctaLink(cta: Cta, emphasis: "primary" | "quiet"): HTMLAnchorElement {
   const node = link(cta, emphasis === "primary" ? "cta-primary" : "cta-quiet");
-  node.append(el("span", "", cta.label), el("span", "cta-glyph", content.ui.ctaGlyph));
+  node.append(el("span", "", cta.label), el("span", "cta-glyph", t().ui.ctaGlyph));
   return node;
 }
 
@@ -73,11 +74,11 @@ function buildNav(): HTMLElement {
   const nav = el("nav", "topbar");
   const shell = el("div", `${SHELL} flex h-full items-center justify-between gap-8`);
 
-  const brand = link({ label: content.site.name, href: "#" }, "topbar-brand");
-  brand.textContent = content.site.name;
+  const brand = link({ label: t().site.name, href: "#" }, "topbar-brand");
+  brand.textContent = t().site.name;
 
   const list = el("ul", "hidden items-center gap-7 lg:flex");
-  for (const entry of content.nav.items satisfies readonly NavItem[]) {
+  for (const entry of t().nav.items satisfies readonly NavItem[]) {
     const anchor = link({ label: entry.label, href: entry.href }, "nav-link");
     anchor.dataset["nav"] = entry.index;
     anchor.append(el("span", "nav-index", entry.index), el("span", "", entry.label));
@@ -86,13 +87,33 @@ function buildNav(): HTMLElement {
     list.append(li);
   }
 
-  shell.append(brand, list, ctaLink(content.nav.cta, "primary"));
+  const actions = el("div", "flex items-center gap-5");
+  actions.append(buildLangSwitch(), ctaLink(t().nav.cta, "primary"));
+
+  shell.append(brand, list, actions);
   nav.append(shell);
   return nav;
 }
 
+/** EN / DE toggle. Switching rebuilds the page in place, without a reload. */
+function buildLangSwitch(): HTMLElement {
+  const group = el("div", "lang-switch");
+  group.setAttribute("role", "group");
+  group.setAttribute("aria-label", t().ui.languageLabel);
+
+  for (const code of LOCALES) {
+    const option = el("button", "lang-option", LOCALE_LABELS[code]);
+    option.type = "button";
+    option.lang = code;
+    option.setAttribute("aria-pressed", String(code === getLocale()));
+    option.addEventListener("click", () => setLocale(code));
+    group.append(option);
+  }
+  return group;
+}
+
 function buildHero(): HTMLElement {
-  const hero = content.hero;
+  const hero = t().hero;
   const header = el("header", "relative");
   header.style.height = "var(--h-hero)";
 
@@ -174,14 +195,14 @@ function workRow(item: WorkItem): HTMLAnchorElement {
   head.append(title, el("span", "work-discipline", item.discipline));
 
   const link = el("div", "work-link");
-  link.append(el("span", "", item.domain), el("span", "cta-glyph", content.ui.ctaGlyph));
+  link.append(el("span", "", item.domain), el("span", "cta-glyph", t().ui.ctaGlyph));
 
   row.append(head, el("p", "work-note", item.note), link);
   return row;
 }
 
 function buildWork(): HTMLElement {
-  const work = content.work;
+  const work = t().work;
   const node = el("section", "band-work relative border-t border-hairline");
   node.id = work.id;
   node.style.minHeight = "var(--h-work)";
@@ -203,7 +224,7 @@ function buildWork(): HTMLElement {
 }
 
 function buildConversion(): HTMLElement {
-  const band = content.conversion;
+  const band = t().conversion;
   const node = el("section", "band-surface relative border-t border-hairline");
   node.id = band.id;
   node.style.minHeight = "var(--h-conversion)";
@@ -237,10 +258,10 @@ function buildFooter(): HTMLElement {
 
   const grid = el("div", `${GRID} gap-y-10`);
   const brand = el("div", "col-span-12 lg:col-span-3");
-  brand.append(el("span", "topbar-brand", content.site.name));
+  brand.append(el("span", "topbar-brand", t().site.name));
 
   grid.append(brand);
-  for (const col of content.footer.columns) {
+  for (const col of t().footer.columns) {
     const cell = el("div", "col-span-6 md:col-span-4 lg:col-span-3");
     cell.append(el("span", "label", col.heading));
     const list = el("ul", "mt-5 flex flex-col gap-3");
@@ -260,8 +281,8 @@ function buildFooter(): HTMLElement {
     "mt-14 flex flex-wrap items-baseline justify-between gap-x-6 gap-y-2 border-t border-hairline pt-6",
   );
   base.append(
-    el("span", "label text-text", content.footer.rule),
-    el("span", "label", content.footer.note),
+    el("span", "label text-text", t().footer.rule),
+    el("span", "label", t().footer.note),
   );
 
   shell.append(grid, base);
@@ -306,10 +327,10 @@ function applyLayoutVars(): void {
 }
 
 function applyDocumentMeta(): void {
-  document.title = content.site.title;
+  document.title = t().site.title;
   const meta = document.createElement("meta");
   meta.name = "description";
-  meta.content = content.site.description;
+  meta.content = t().site.description;
   document.head.append(meta);
 }
 
@@ -323,7 +344,7 @@ export function buildPage(mount: HTMLElement): readonly RevealTarget[] {
   applyDocumentMeta();
 
   const hero = buildHero();
-  const sections = content.sections.map(buildSection);
+  const sections = t().sections.map(buildSection);
 
   mount.replaceChildren(
     buildGridRules(),

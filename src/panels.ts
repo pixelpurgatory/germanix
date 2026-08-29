@@ -1,5 +1,5 @@
-import { content } from "./content.ts";
 import type { BookPanel, FormField, PanelBase, RecordPanel } from "./content.ts";
+import { t } from "./locale.ts";
 
 /**
  * The two destination pages, as overlays rather than separate documents.
@@ -59,7 +59,7 @@ function shell(panel: PanelBase): { root: HTMLElement; body: HTMLElement } {
   const close = el("button", "panel-close");
   close.type = "button";
   close.dataset["close"] = "true";
-  close.append(el("span", "", panel.close), el("span", "", content.ui.closeGlyph));
+  close.append(el("span", "", panel.close), el("span", "", t().ui.closeGlyph));
   barShell.append(el("span", "label", panel.label), close);
   bar.append(barShell);
 
@@ -157,7 +157,7 @@ function buildForm(panel: BookPanel): HTMLElement {
 
   const submit = el("button", "cta-primary form-submit");
   submit.type = "submit";
-  submit.append(el("span", "", spec.submit), el("span", "cta-glyph", content.ui.ctaGlyph));
+  submit.append(el("span", "", spec.submit), el("span", "cta-glyph", t().ui.ctaGlyph));
 
   const status = el("p", "form-status");
   status.hidden = true;
@@ -245,48 +245,51 @@ const FOCUSABLE =
  * anchor would; closing replaces the URL and re-routes, so the back button
  * never lands the reader on a panel they just dismissed.
  */
-export function mountPanels(mount: HTMLElement): void {
-  const panels = new Map<string, HTMLElement>([
-    [content.panels.book.id, buildBook(content.panels.book)],
-    [content.panels.record.id, buildRecord(content.panels.record)],
-  ]);
-  for (const node of panels.values()) mount.append(node);
+let restoreFocus: HTMLElement | null = null;
+let listenersInstalled = false;
 
-  let restoreFocus: HTMLElement | null = null;
+/** Looked up in the DOM rather than held in a closure, because a language
+ *  switch replaces every panel node while these listeners stay put. */
+function openPanel(): HTMLElement | null {
+  const id = location.hash.replace(/^#/, "");
+  return id ? document.getElementById(`panel-${id}`) : null;
+}
 
-  const close = (): void => {
-    history.pushState(null, "", `${location.pathname}${location.search}`);
-    route();
-  };
+function route(): void {
+  const open = openPanel();
 
-  const route = (): void => {
-    const id = location.hash.replace(/^#/, "");
-    const open = panels.get(id) ?? null;
-
-    for (const [key, node] of panels) node.hidden = key !== id;
-    document.documentElement.classList.toggle("panel-open", open !== null);
-
-    if (open) {
-      if (!restoreFocus) restoreFocus = document.activeElement as HTMLElement | null;
-      const scroller = open.querySelector<HTMLElement>(".panel-scroll");
-      if (scroller) scroller.scrollTop = 0;
-      open.querySelector<HTMLElement>("[data-close]")?.focus();
-    } else if (restoreFocus) {
-      restoreFocus.focus();
-      restoreFocus = null;
-    }
-  };
-
-  for (const node of panels.values()) {
-    node.addEventListener("click", (event) => {
-      const target = event.target as HTMLElement | null;
-      if (target?.closest("[data-close]")) close();
-    });
+  for (const node of document.querySelectorAll<HTMLElement>(".panel")) {
+    node.hidden = node !== open;
   }
+  document.documentElement.classList.toggle("panel-open", open !== null);
+
+  if (open) {
+    if (!restoreFocus) restoreFocus = document.activeElement as HTMLElement | null;
+    const scroller = open.querySelector<HTMLElement>(".panel-scroll");
+    if (scroller) scroller.scrollTop = 0;
+    open.querySelector<HTMLElement>("[data-close]")?.focus();
+  } else if (restoreFocus) {
+    restoreFocus.focus();
+    restoreFocus = null;
+  }
+}
+
+function close(): void {
+  history.pushState(null, "", `${location.pathname}${location.search}`);
+  route();
+}
+
+function installListeners(): void {
+  if (listenersInstalled) return;
+  listenersInstalled = true;
+
+  document.addEventListener("click", (event) => {
+    const target = event.target as HTMLElement | null;
+    if (target?.closest("[data-close]")) close();
+  });
 
   document.addEventListener("keydown", (event) => {
-    const id = location.hash.replace(/^#/, "");
-    const open = panels.get(id);
+    const open = openPanel();
     if (!open) return;
 
     if (event.key === "Escape") {
@@ -311,5 +314,10 @@ export function mountPanels(mount: HTMLElement): void {
 
   window.addEventListener("hashchange", route);
   window.addEventListener("popstate", route);
+}
+
+export function mountPanels(mount: HTMLElement): void {
+  mount.append(buildBook(t().panels.book), buildRecord(t().panels.record));
+  installListeners();
   route();
 }

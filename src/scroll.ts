@@ -82,7 +82,9 @@ const REVEAL_FADE = 0.28;
  * The pinned window is computed from the same LAYOUT_VH that produced the
  * blend centres, so the copy is opaque exactly while it is pinned.
  */
-export function attachReveals(targets: readonly RevealTarget[]): void {
+export function attachReveals(targets: readonly RevealTarget[]): () => void {
+  const created: ScrollTrigger[] = [];
+
   for (const { node, heightVh } of targets) {
     const inner = node.firstElementChild;
     if (!(inner instanceof HTMLElement)) continue;
@@ -91,17 +93,30 @@ export function attachReveals(targets: readonly RevealTarget[]): void {
     const pinStart = LAYOUT_VH.viewport / travel;
     const pinEnd = heightVh / travel;
 
-    ScrollTrigger.create({
-      trigger: node,
-      start: "top bottom",
-      end: "bottom top",
-      onUpdate: (self) => {
-        const t = self.progress;
-        const fade =
-          smoothstep(pinStart - REVEAL_FADE, pinStart, t) *
-          (1 - smoothstep(pinEnd, pinEnd + REVEAL_FADE, t));
-        inner.style.opacity = fade.toFixed(3);
-      },
-    });
+    created.push(
+      ScrollTrigger.create({
+        trigger: node,
+        start: "top bottom",
+        end: "bottom top",
+        onUpdate: (self) => {
+          const t = self.progress;
+          const fade =
+            smoothstep(pinStart - REVEAL_FADE, pinStart, t) *
+            (1 - smoothstep(pinEnd, pinEnd + REVEAL_FADE, t));
+          inner.style.opacity = fade.toFixed(3);
+        },
+      }),
+    );
   }
+
+  // The page rebuilds on a language switch, which detaches these nodes. The
+  // triggers have to go with them or they keep writing to orphans.
+  return () => {
+    for (const trigger of created) trigger.kill();
+  };
+}
+
+/** Re-measures after the DOM has been rebuilt underneath the driver. */
+export function refreshScroll(): void {
+  ScrollTrigger.refresh();
 }

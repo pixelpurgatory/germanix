@@ -1,40 +1,66 @@
 import "./style.css";
 import { GLCore, prefersReducedMotion } from "./gl/core.ts";
 import { ParticleSystem, selectTier } from "./gl/system.ts";
-import { attachReveals, createScrollDriver } from "./scroll.ts";
+import { attachReveals, createScrollDriver, refreshScroll } from "./scroll.ts";
 import { createPointerDriver } from "./pointer.ts";
 import { buildPage, createNavHighlighter } from "./page.ts";
 import { mountPanels } from "./panels.ts";
+import { applyDocumentLocale, onLocaleChange } from "./locale.ts";
 import { dominantState } from "./gl/states.ts";
 
-const canvas = document.querySelector<HTMLCanvasElement>("#gl");
-const mount = document.querySelector<HTMLElement>("#page");
-if (!canvas || !mount) throw new Error("missing #gl canvas or #page mount");
+const canvasEl = document.querySelector<HTMLCanvasElement>("#gl");
+const mountEl = document.querySelector<HTMLElement>("#page");
+if (!canvasEl || !mountEl) throw new Error("missing #gl canvas or #page mount");
 
-const reveals = buildPage(mount);
-mountPanels(mount);
-
-const core = new GLCore(canvas);
-const system = new ParticleSystem(selectTier());
-core.scene.add(system.mesh);
+// Rebound so the narrowing survives into render(), which runs on every
+// language switch rather than once at startup.
+const canvas = canvasEl;
+const mount = mountEl;
 
 const SCAN_PERIOD = 6.5;
 const SCAN_TRAVEL = 11.0;
 const VELOCITY_FOLLOW = 0.12;
 
-if (prefersReducedMotion()) {
-  // Static state A: uProgress pinned to 0, no scroll morph, one frame then stop.
+const reduced = prefersReducedMotion();
+const core = new GLCore(canvas);
+const system = new ParticleSystem(selectTier());
+core.scene.add(system.mesh);
+
+// Mutable slots, because the scroll driver and the GL loop outlive a language
+// switch and have to keep reaching the freshly built DOM.
+let disposeReveals: (() => void) | null = null;
+let setActiveNav: (index: number) => void = () => {};
+
+/**
+ * Builds the whole document. Re-run on a language switch, which is why the
+ * old reveal triggers are killed first and the scroll offset is restored: the
+ * layout is identical between locales, only the words change.
+ */
+function render(): void {
+  const offset = window.scrollY;
+  disposeReveals?.();
+
+  const targets = buildPage(mount);
+  mountPanels(mount);
+  setActiveNav = createNavHighlighter();
+  if (!reduced) disposeReveals = attachReveals(targets);
+
+  refreshScroll();
+  window.scrollTo(0, offset);
+}
+
+applyDocumentLocale();
+render();
+
+if (reduced) {
+  // Static dragonfly: uProgress pinned to 0, no scroll morph, one frame.
   system.setNumber("uProgress", 0);
   system.setNumber("uScanY", 0);
   system.setNumber("uAspect", core.camera.aspect);
   core.renderOnce();
 } else {
-  const setActiveNav = createNavHighlighter();
-  // State 0 is the dragonfly, which owns the hero and has no nav entry, so the
-  // four listed practices sit one index behind the state list.
   const scroll = createScrollDriver((p) => setActiveNav(dominantState(p) - 1));
   const pointer = createPointerDriver(core.camera);
-  attachReveals(reveals);
   let velocity = 0;
 
   core.onFrame((elapsed) => {
@@ -52,3 +78,5 @@ if (prefersReducedMotion()) {
 
   core.start();
 }
+
+onLocaleChange(render);

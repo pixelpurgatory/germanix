@@ -262,6 +262,33 @@
     transition: color 0.18s ease;
   }
 
+  /* ---- language switch ------------------------------------------------- */
+
+  .lang-switch {
+    display: flex;
+    align-items: center;
+    border: 1px solid var(--c-hairline);
+  }
+
+  .lang-option {
+    @apply font-mono text-[11px] uppercase leading-none tracking-label text-muted;
+    padding: 0.6rem 0.6rem;
+    background: none;
+    cursor: pointer;
+    transition:
+      color 0.18s ease,
+      background-color 0.18s ease;
+  }
+
+  .lang-option:hover {
+    color: var(--c-text);
+  }
+
+  .lang-option[aria-pressed="true"] {
+    background-color: var(--c-hairline);
+    color: var(--c-text);
+  }
+
   .nav-link[data-active="true"] .nav-index {
     color: var(--c-accent);
   }

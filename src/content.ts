@@ -1,8 +1,23 @@
 /**
- * Every user-visible string in the application, including the document title,
- * the meta description and the CTA glyph. Nothing is hardcoded in markup or in
- * page.ts. If a reader can see it, it is declared here.
+ * Every user-visible string in the application, in both languages, including
+ * the document title, the meta description and the CTA glyph. Nothing is
+ * hardcoded in markup, page.ts or panels.ts. If a reader can see it, it is
+ * declared here.
+ *
+ * This file runs well past the 350 line guideline. Splitting it would breach
+ * the hard constraint that all copy lives in src/content.ts, so the constraint
+ * wins and the file stays whole.
+ *
+ * Ids, hrefs and anchor targets are deliberately identical across locales, so
+ * a link to #book keeps working when the reader switches language.
  */
+
+export type Locale = "en" | "de";
+
+export const LOCALES: readonly Locale[] = ["en", "de"];
+
+/** Switch labels. Shared across locales, so they sit outside Content. */
+export const LOCALE_LABELS: Record<Locale, string> = { en: "EN", de: "DE" };
 
 export interface Metric {
   readonly value: string;
@@ -147,6 +162,7 @@ export interface Content {
     readonly ctaGlyph: string;
     readonly metaSeparator: string;
     readonly closeGlyph: string;
+    readonly languageLabel: string;
   };
   readonly nav: {
     readonly items: readonly NavItem[];
@@ -167,7 +183,9 @@ export interface Content {
   };
 }
 
-export const content: Content = {
+const MAIL = "build@nordwerk.systems";
+
+const en: Content = {
   site: {
     name: "NORDWERK",
     title: "NORDWERK / Applied AI systems",
@@ -179,6 +197,7 @@ export const content: Content = {
     ctaGlyph: "→",
     metaSeparator: "/",
     closeGlyph: "✕",
+    languageLabel: "Language",
   },
 
   nav: {
@@ -194,10 +213,10 @@ export const content: Content = {
   hero: {
     label: "APPLIED AI SYSTEMS",
     headline: "Enterprise AI that makes it past the pilot.",
-    body: "We are a 27 person engineering shop in Hamburg and Rotterdam. We build automation, interfaces, agents and vision systems, and then we run them. Everything we ship belongs to you, source included.",
+    body: "We are a three person engineering shop in Hamburg and Rotterdam. We build automation, interfaces, agents and vision systems, and then we run them. Everything we ship belongs to you, source included.",
     meta: [
       { value: "2019", label: "FOUNDED" },
-      { value: "27", label: "ENGINEERS" },
+      { value: "3", label: "ENGINEERS" },
       { value: "SOC 2", label: "TYPE II" },
       { value: "DE / NL", label: "OFFICES" },
     ],
@@ -304,7 +323,7 @@ export const content: Content = {
     secondary: { label: "See the deployment record", href: "#record" },
     meta: [
       { value: "14 DAYS", label: "ASSESSMENT WINDOW" },
-      { value: "18,400 EUR", label: "FIXED FEE, CREDITED" },
+      { value: "1,400 EUR", label: "FIXED FEE, CREDITED" },
       { value: "3", label: "SLOTS PER QUARTER" },
     ],
   },
@@ -372,7 +391,7 @@ export const content: Content = {
       terms: {
         heading: "TERMS",
         items: [
-          { value: "18,400 EUR", label: "FIXED FEE, CREDITED IN FULL AGAINST PHASE ONE" },
+          { value: "1,400 EUR", label: "FIXED FEE, CREDITED IN FULL AGAINST PHASE ONE" },
           { value: "14 DAYS", label: "ELAPSED, NOT BILLED DAYS" },
           { value: "3", label: "SLOTS PER QUARTER" },
           { value: "7 DAYS", label: "FREE CANCELLATION BEFORE START" },
@@ -383,10 +402,10 @@ export const content: Content = {
         heading: "REQUEST A SLOT",
         note: "Tell us what you run and roughly when you want to start. We reply within two working days, and we say no when we are not the right shop for it.",
         submit: "Send request",
-        mailto: "build@nordwerk.systems",
+        mailto: MAIL,
         subject: "Assessment request",
         success: "Your mail client should have opened with the request filled in. If nothing happened, send the same details to the address below.",
-        fallback: "build@nordwerk.systems",
+        fallback: MAIL,
         fields: [
           { name: "Name", label: "NAME", type: "text", options: [], placeholder: "", required: true },
           { name: "Company", label: "COMPANY", type: "text", options: [], placeholder: "", required: true },
@@ -509,7 +528,7 @@ export const content: Content = {
       {
         heading: "CONTACT",
         items: [
-          { label: "build@nordwerk.systems", href: "mailto:build@nordwerk.systems" },
+          { label: MAIL, href: `mailto:${MAIL}` },
           { label: "Deployment record", href: "#record" },
         ],
       },
@@ -518,3 +537,358 @@ export const content: Content = {
     note: "ALL SYSTEMS DELIVERED WITH SOURCE",
   },
 };
+
+const de: Content = {
+  site: {
+    name: "NORDWERK",
+    title: "NORDWERK / Angewandte KI-Systeme",
+    description:
+      "NORDWERK baut und betreibt Geschäftsautomatisierung, Echtzeit-3D, Sprach- und Chat-Agenten sowie Bildverarbeitung am Edge für operative Teams in Hamburg und Rotterdam.",
+  },
+
+  ui: {
+    ctaGlyph: "→",
+    metaSeparator: "/",
+    closeGlyph: "✕",
+    languageLabel: "Sprache",
+  },
+
+  nav: {
+    items: [
+      { index: "01", label: "Automatisierung", href: "#automation" },
+      { index: "02", label: "Immersiv", href: "#immersive" },
+      { index: "03", label: "Agenten", href: "#operators" },
+      { index: "04", label: "Bildanalyse", href: "#vision" },
+    ],
+    cta: { label: "Analyse buchen", href: "#book" },
+  },
+
+  hero: {
+    label: "ANGEWANDTE KI-SYSTEME",
+    headline: "Enterprise-KI, die über den Pilotbetrieb hinauskommt.",
+    body: "Wir sind ein Ingenieurbüro mit drei Leuten in Hamburg und Rotterdam. Wir bauen Automatisierung, Interfaces, Agenten und Bildverarbeitung, und danach betreiben wir sie. Alles, was wir ausliefern, gehört Ihnen, Quellcode inklusive.",
+    meta: [
+      { value: "2019", label: "GEGRÜNDET" },
+      { value: "3", label: "INGENIEURE" },
+      { value: "SOC 2", label: "TYP II" },
+      { value: "DE / NL", label: "STANDORTE" },
+    ],
+    scrollCue: "SCROLLEN",
+  },
+
+  sections: [
+    {
+      id: "automation",
+      index: "01",
+      label: "KERNAUTOMATISIERUNG / CRM-KERNE",
+      headline: "Die Arbeit, die Ihr Team noch von Hand macht.",
+      body: "Eigene CRM-Kerne, interne Assistenten, Routing- und Freigabelogik. Wir setzen uns zuerst neben die Leute, die die Arbeit machen, denn der dokumentierte Prozess und der täglich gelebte sind meistens auseinandergelaufen. Alles läuft auf Ihrer Infrastruktur und der Quellcode gehört Ihnen.",
+      metrics: [
+        { value: "142", label: "PROZESSE IM PRODUKTIVBETRIEB" },
+        { value: "8,4 MIO", label: "EVENTS TÄGLICH GEROUTET" },
+        { value: "31 MS", label: "MEDIANE KERNEL-LATENZ" },
+      ],
+      cta: { label: "Automatisierungs-Audit buchen", href: "#book" },
+      align: "left",
+    },
+    {
+      id: "immersive",
+      index: "02",
+      label: "IMMERSIVES WEB / ECHTZEIT-3D",
+      headline: "Echtzeit-3D, das auf einem vier Jahre alten Laptop noch 60 fps schafft.",
+      body: "Produktkonfiguratoren, räumliche Markenarbeit, interaktive Dokumentation. Wir kalkulieren das Frame-Budget, bevor jemand ein Designtool öffnet. Ein Kontext, ein Draw-Pfad, Geometrie im Shader erzeugt statt heruntergeladen. Wenn es auf dem Rechner des Kunden ruckelt, ist es egal, wie gut es im Studio aussah.",
+      metrics: [
+        { value: "58,7 FPS", label: "P95, MITTELKLASSE-GPU" },
+        { value: "1,9 S", label: "LARGEST CONTENTFUL PAINT" },
+        { value: "41", label: "AUSGELIEFERTE WEBGL-BUILDS" },
+      ],
+      cta: { label: "So messen wir das", href: "#record" },
+      align: "right",
+    },
+    {
+      id: "operators",
+      index: "03",
+      label: "SPRACH- & CHAT-AGENTEN",
+      headline: "Agenten, die auch die zweite Frage schaffen.",
+      body: "Chat- und Sprachagenten, die Kontext über Kanäle hinweg behalten und wissen, wann sie übergeben müssen. Wir betreiben sie in Schichten: ein Agent für die Erstaufnahme, ein Spezialist dahinter und eine Aufsicht, die Transkripte liest. Jede Entscheidung wird protokolliert, und danach fragt Ihre Compliance-Abteilung normalerweise zuerst.",
+      metrics: [
+        { value: "97,3 %", label: "INTENT-ERKENNUNG, ERSTER DURCHLAUF" },
+        { value: "620 MS", label: "LATENZ PRO SPRECHERWECHSEL" },
+        { value: "27", label: "SPRACHEN IM EINSATZ" },
+      ],
+      cta: { label: "Agenten live hören", href: "#book" },
+      align: "left",
+    },
+    {
+      id: "vision",
+      index: "04",
+      label: "BILDANALYSE & RAUMDATEN",
+      headline: "Niemand hat Zeit, das Material anzusehen.",
+      body: "Belegung, Wege, Arbeitssicherheit und Qualitätsprüfung. Die Inferenz läuft auf dem Gerät und nur die Zusammenfassung geht nach oben, das Video bleibt also vor Ort, solange Sie es nicht anders entscheiden. Genau dieses Detail bringt das Projekt meistens durch die Rechtsabteilung.",
+      metrics: [
+        { value: "1.284", label: "BETREUTE EDGE-KAMERAS" },
+        { value: "99,1 %", label: "ERKENNUNGSGENAUIGKEIT" },
+        { value: "6,3 W", label: "LEISTUNGSAUFNAHME PRO KNOTEN" },
+      ],
+      cta: { label: "Standort-Rollout planen", href: "#book" },
+      align: "right",
+    },
+  ],
+
+  work: {
+    id: "work",
+    label: "AUSGEWÄHLTE ARBEITEN",
+    headline: "Ein paar, die Sie selbst öffnen können.",
+    items: [
+      {
+        index: "01",
+        name: "Cula",
+        discipline: "PLATTFORM / DATEN",
+        note: "Messung, Berichterstattung und Verifizierung für CO2-Entnahme, auf Basis laufender Betriebsdaten und über alle Entnahmepfade hinweg.",
+        domain: "cula.tech",
+        href: "https://www.cula.tech",
+      },
+      {
+        index: "02",
+        name: "Pier88 Coast",
+        discipline: "GASTRONOMIE / MARKE",
+        note: "Eine Küstenmarke, die ein Haus vom Aperitivo bis ins Nachtprogramm trägt.",
+        domain: "pier88coast.com",
+        href: "https://pier88coast.com",
+      },
+      {
+        index: "03",
+        name: "CRAV",
+        discipline: "HANDEL / MARKE",
+        note: "Smashed-Burger-Haus in Navarra, bei dem die Bestellung in der Markenseite steckt statt daneben zu hängen.",
+        domain: "cravburgers.shop",
+        href: "https://www.cravburgers.shop",
+      },
+    ],
+  },
+
+  conversion: {
+    id: "engagement",
+    label: "ZUSAMMENARBEIT",
+    headline: "Beginnen Sie mit einer zweiwöchigen technischen Analyse.",
+    body: "Wir lesen Ihre Systeme, instrumentieren den Prozess und kommen mit einem kalkulierten Plan zurück. Darin stehen auch die Teile, die wir nicht bauen würden. Festpreis, wird auf die erste Umsetzungsphase angerechnet.",
+    cta: { label: "Analyse buchen", href: "#book" },
+    secondary: { label: "Einsatzliste ansehen", href: "#record" },
+    meta: [
+      { value: "14 TAGE", label: "ZEITRAUM DER ANALYSE" },
+      { value: "1.400 EUR", label: "FESTPREIS, ANGERECHNET" },
+      { value: "3", label: "PLÄTZE PRO QUARTAL" },
+    ],
+  },
+
+  panels: {
+    book: {
+      id: "book",
+      label: "ZUSAMMENARBEIT / ANALYSE",
+      title: "Die zweiwöchige Analyse.",
+      intro: "Vierzehn Tage in Ihrem Betrieb, am Ende steht ein kalkulierter Umsetzungsplan, der Ihnen gehört, ob Sie uns danach beauftragen oder nicht. Alles Folgende passiert wirklich, und zwar in dieser Reihenfolge.",
+      close: "Schließen",
+
+      phases: {
+        heading: "WAS PASSIERT",
+        items: [
+          {
+            range: "TAG 1 / 2",
+            title: "Zugänge und Bestandsaufnahme",
+            body: "Wir bekommen Lesezugriff auf die betroffenen Systeme und schreiben auf, was tatsächlich läuft, inklusive der Tabellen und Cronjobs, für die sich niemand mehr zuständig fühlt.",
+          },
+          {
+            range: "TAG 3 / 5",
+            title: "Neben der Arbeit sitzen",
+            body: "Wir sehen den Leuten bei der Arbeit zu, stoppen die manuellen Schritte und notieren jede Stelle, an der sie am Werkzeug vorbei arbeiten statt damit.",
+          },
+          {
+            range: "TAG 6 / 8",
+            title: "Instrumentierung",
+            body: "Wir setzen Zähler auf die Teile, die Sie bisher nicht sehen können. Die meisten Teams schätzen ihre eigenen Mengen um den Faktor zwei falsch ein, in die eine oder die andere Richtung.",
+          },
+          {
+            range: "TAG 9 / 11",
+            title: "Kalkulation",
+            body: "Jeder mögliche Baustein wird gegen die Stunden gerechnet, die er einspart, gegen die Fehlerquellen, die er mitbringt, und gegen die Betriebskosten nach unserem Abgang.",
+          },
+          {
+            range: "TAG 12 / 14",
+            title: "Die Auswertung",
+            body: "Sie bekommen den Plan und eine Begehung mit Ihrem Team. Die Teile, die wir nicht bauen würden, stellen wir mit demselben Gewicht vor wie die, die wir bauen würden.",
+          },
+        ],
+      },
+
+      deliverables: {
+        heading: "WAS SIE BEKOMMEN",
+        items: [
+          "Einen schriftlichen Umsetzungsplan mit den Phasen in kalkulierter Reihenfolge",
+          "Ausgangswerte zu Menge, Latenz und Fehlern, gemessen statt geschätzt",
+          "Eine Liste dessen, wovon wir abraten, jeweils mit Begründung",
+          "Die Instrumentierung, die in Ihrer Infrastruktur bleibt und weiterläuft",
+          "Eine 90-minütige Begehung mit Ihrem Team, auf Wunsch aufgezeichnet",
+        ],
+      },
+
+      requirements: {
+        heading: "WAS WIR VON IHNEN BRAUCHEN",
+        items: [
+          "Lesezugriff auf die betroffenen Systeme, erteilt in den ersten zwei Tagen",
+          "Zwei Stunden mit den Leuten, die den Prozess täglich fahren",
+          "Eine Person, die Fragen zum gedachten Ablauf verbindlich klären kann",
+          "Eine benannte Kontaktperson für Sicherheit, sofern personenbezogene Daten betroffen sind",
+        ],
+      },
+
+      terms: {
+        heading: "KONDITIONEN",
+        items: [
+          { value: "1.400 EUR", label: "FESTPREIS, VOLL AUF PHASE EINS ANGERECHNET" },
+          { value: "14 TAGE", label: "KALENDERTAGE, KEINE ABRECHNUNGSTAGE" },
+          { value: "3", label: "PLÄTZE PRO QUARTAL" },
+          { value: "7 TAGE", label: "KOSTENFREIE ABSAGE VOR BEGINN" },
+        ],
+      },
+
+      form: {
+        heading: "PLATZ ANFRAGEN",
+        note: "Sagen Sie uns, was bei Ihnen läuft und wann Sie ungefähr anfangen wollen. Wir antworten innerhalb von zwei Werktagen, und wir sagen ab, wenn wir nicht das richtige Büro dafür sind.",
+        submit: "Anfrage senden",
+        mailto: MAIL,
+        subject: "Anfrage Analyse",
+        success: "Ihr Mailprogramm sollte sich mit der ausgefüllten Anfrage geöffnet haben. Falls nichts passiert ist, schicken Sie dieselben Angaben an die Adresse unten.",
+        fallback: MAIL,
+        fields: [
+          { name: "Name", label: "NAME", type: "text", options: [], placeholder: "", required: true },
+          { name: "Company", label: "UNTERNEHMEN", type: "text", options: [], placeholder: "", required: true },
+          { name: "Email", label: "E-MAIL", type: "email", options: [], placeholder: "", required: true },
+          {
+            name: "Practice",
+            label: "BEREICH",
+            type: "select",
+            options: [
+              "Kernautomatisierung und CRM-Kerne",
+              "Immersives Web und Echtzeit-3D",
+              "Sprach- und Chat-Agenten",
+              "Bildanalyse und Raumdaten",
+              "Noch unklar",
+            ],
+            placeholder: "",
+            required: true,
+          },
+          {
+            name: "Start",
+            label: "FRÜHESTER START",
+            type: "select",
+            options: ["Dieses Quartal", "Nächstes Quartal", "Später in diesem Jahr", "Noch offen"],
+            placeholder: "",
+            required: true,
+          },
+          {
+            name: "Systems",
+            label: "BETROFFENE SYSTEME",
+            type: "textarea",
+            options: [],
+            placeholder: "Welche Systeme, wie viele Leute arbeiten damit, und was geht am häufigsten kaputt.",
+            required: true,
+          },
+        ],
+      },
+    },
+
+    record: {
+      id: "record",
+      label: "ZUSAMMENARBEIT / NACHWEIS",
+      title: "Einsatzliste.",
+      intro: "Jedes System, das wir seit 2019 in den Produktivbetrieb gebracht haben, mit der Kennzahl, an der der Kunde es gemessen hat. Kunden stehen als Branche darin, weil die meisten dieser Verträge den Namen nicht erlauben. Wird zum Quartalsende aktualisiert.",
+      close: "Schließen",
+
+      table: {
+        heading: "IM PRODUKTIVBETRIEB",
+        columns: ["JAHR", "KUNDE", "BEREICH", "UMFANG", "ERGEBNIS", "STATUS"],
+        rows: [
+          { year: "2025", client: "Industrielogistik-Gruppe", practice: "Automatisierung", scope: "Disponierkern, 6 Standorte", result: "31 ms p50", status: "Läuft" },
+          { year: "2025", client: "Energiemessdienstleister", practice: "Bildanalyse", scope: "Zählerablesung per Mastkamera, 940 Stück", result: "99,1 % Genauigkeit", status: "Läuft" },
+          { year: "2024", client: "Medizintechnik-Hersteller", practice: "Automatisierung", scope: "Reklamationsannahme und Sichtung", result: "4.180 Fälle / Mon", status: "Läuft" },
+          { year: "2024", client: "Regionalversicherer", practice: "Agenten", scope: "Schadenchat erste Linie, 3 Sprachen", result: "97,3 % erster Lauf", status: "Läuft" },
+          { year: "2024", client: "Hafenbehörde", practice: "Bildanalyse", scope: "Kajbelegung und Sicherheitszonen", result: "1.284 Kameras", status: "Läuft" },
+          { year: "2023", client: "Großhandel", practice: "Automatisierung", scope: "Auftragserfassung aus PDF und E-Mail", result: "8,4 Mio Events / Tag", status: "Läuft" },
+          { year: "2023", client: "Verkehrsbetrieb", practice: "Agenten", scope: "Sprachlinie bei Störungen", result: "620 ms Wechsel", status: "Läuft" },
+          { year: "2023", client: "Spezialchemie", practice: "Plattform", scope: "Oberfläche für Chargenprotokolle", result: "2,1 s LCP", status: "Läuft" },
+          { year: "2022", client: "Gebäudedienstleister", practice: "Automatisierung", scope: "Auftragsdisposition, 40 Kolonnen", result: "Keine vereinbarte Kennzahl", status: "Übergeben" },
+          { year: "2022", client: "Möbelhersteller", practice: "Immersiv", scope: "Produktkonfigurator, 40 Artikel", result: "58,7 fps p95", status: "Übergeben" },
+          { year: "2021", client: "Landwirtschaftliche Genossenschaft", practice: "Bildanalyse", scope: "Sichtprüfung an der Sortierlinie", result: "6,3 W pro Knoten", status: "Abgeschaltet" },
+          { year: "2020", client: "Druckereigruppe", practice: "Automatisierung", scope: "Angebotserstellung aus Datenblättern", result: "Keine vereinbarte Kennzahl", status: "Abgeschaltet" },
+        ],
+      },
+
+      method: {
+        heading: "WIE DIESE ZAHLEN ENTSTEHEN",
+        items: [
+          {
+            term: "Im Produktivbetrieb",
+            body: "Trägt seit mindestens 30 zusammenhängenden Tagen echten Verkehr für einen zahlenden Kunden. Pilotprojekte und Machbarkeitsnachweise stehen nicht auf dieser Liste, so gut sie auch gelaufen sind.",
+          },
+          {
+            term: "Latenz",
+            body: "Gemessen an der Dienstgrenze innerhalb unserer eigenen Infrastruktur, also ohne Kundennetz und ohne Browser. p50 und p95 über rollierende 30 Tage.",
+          },
+          {
+            term: "Erkennungsgenauigkeit",
+            body: "Richtige Treffer im Verhältnis zu allen Meldungen, monatlich geprüft gegen 2.000 von Hand beschriftete Bilder von genau diesem Standort statt aus einem Benchmark.",
+          },
+          {
+            term: "Keine vereinbarte Kennzahl",
+            body: "Wir haben übergeben, bevor der Kunde und wir uns auf eine Zahl geeinigt hatten. Werte, die wir damals nicht gemessen haben, tragen wir nicht nachträglich ein.",
+          },
+          {
+            term: "Abgeschaltet",
+            body: "Der Kunde hat den Dienst eingestellt oder ersetzt. Die Zeile bleibt in der Liste.",
+          },
+        ],
+      },
+
+      incidents: {
+        heading: "STÖRUNGEN, LETZTE 24 MONATE",
+        items: [
+          { value: "4", label: "STÖRUNGEN DER STUFE EINS" },
+          { value: "71 MIN", label: "LÄNGSTER EINZELAUSFALL" },
+          { value: "100 %", label: "AUFGEARBEITET UND AN DEN KUNDEN GESCHICKT" },
+        ],
+      },
+    },
+  },
+
+  footer: {
+    columns: [
+      {
+        heading: "BEREICHE",
+        items: [
+          { label: "Kernautomatisierung", href: "#automation" },
+          { label: "Immersives Web", href: "#immersive" },
+          { label: "Sprache und Chat", href: "#operators" },
+          { label: "Bildanalyse", href: "#vision" },
+        ],
+      },
+      {
+        heading: "STANDORTE",
+        items: [
+          { label: "Hamburg, Hammerbrook", href: "#engagement" },
+          { label: "Rotterdam, Katendrecht", href: "#engagement" },
+        ],
+      },
+      {
+        heading: "KONTAKT",
+        items: [
+          { label: MAIL, href: `mailto:${MAIL}` },
+          { label: "Einsatzliste", href: "#record" },
+        ],
+      },
+    ],
+    rule: "NORDWERK SYSTEMS GMBH",
+    note: "ALLE SYSTEME WERDEN MIT QUELLCODE ÜBERGEBEN",
+  },
+};
+
+export const content: Record<Locale, Content> = { en, de };

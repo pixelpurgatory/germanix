@@ -171,6 +171,31 @@ try {
   await client.send("Page.navigate", { url: pageUrl });
   await new Promise((r) => setTimeout(r, 3500));
 
+  // Switching language the way a reader does, by clicking the toggle.
+  for (const lang of argOf("lang", "").split(",").filter(Boolean)) {
+    const res = await client.send("Runtime.evaluate", {
+      returnByValue: true,
+      expression: `(() => {
+        const btn = [...document.querySelectorAll('.lang-option')].find(b => b.lang === ${JSON.stringify(lang)});
+        if (!btn) return 'no toggle';
+        btn.click();
+        return 'clicked';
+      })()`,
+    });
+    await new Promise((r) => setTimeout(r, 1500));
+    const state = await client.send("Runtime.evaluate", {
+      returnByValue: true,
+      expression: `JSON.stringify({
+        htmlLang: document.documentElement.lang,
+        pressed: [...document.querySelectorAll('.lang-option')].map(b => b.lang + ':' + b.getAttribute('aria-pressed')).join(' '),
+        headline: document.querySelector('h1')?.textContent?.slice(0, 48) ?? null,
+        panels: document.querySelectorAll('.panel').length,
+        scrollTriggers: document.querySelectorAll('section[id]').length,
+      })`,
+    });
+    console.log(`  lang switch: ${res.result.value} -> ${state.result.value}`);
+  }
+
   // Opening a panel the way a reader does, by changing the hash.
   const hash = argOf("hash", "");
   if (hash) {
@@ -282,14 +307,16 @@ try {
 // Strip content strings longest-first; anything but whitespace left over is a
 // string that entered the page from somewhere other than the content module.
 if (renderedCopy) {
-  const { content } = await import(new URL("../src/content.ts", import.meta.url).href);
+  // Whole namespace, not just `content`: the locale switch labels and both
+  // languages' copy all live in this module and all reach the page.
+  const module = await import(new URL("../src/content.ts", import.meta.url).href);
   const pool = [];
   const collect = (value) => {
     if (typeof value === "string") pool.push(value);
     else if (Array.isArray(value)) value.forEach(collect);
     else if (value && typeof value === "object") Object.values(value).forEach(collect);
   };
-  collect(content);
+  for (const value of Object.values(module)) collect(value);
   pool.sort((a, b) => b.length - a.length);
 
   const rendered = [renderedCopy.title, renderedCopy.description, ...renderedCopy.text].filter(
