@@ -4,6 +4,10 @@
 
 @layer base {
   :root {
+    /* Native form controls and scrollbars follow this, so a select's dropdown
+       list comes up dark instead of as a white system panel. */
+    color-scheme: dark;
+
     --c-base: #0a0a0b;
     --c-surface: #141416;
     --c-hairline: #26262a;
@@ -41,8 +45,52 @@
     font-weight: inherit;
   }
 
-  ul {
+  ul,
+  ol,
+  dl,
+  dd {
     list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  h3,
+  h4 {
+    font-size: inherit;
+    font-weight: inherit;
+    margin: 0;
+  }
+
+  button,
+  input,
+  select,
+  textarea {
+    font: inherit;
+    color: inherit;
+    margin: 0;
+  }
+
+  table {
+    border-collapse: collapse;
+  }
+
+  [hidden] {
+    display: none !important;
+  }
+
+  /* The panel is a fixed overlay with its own scroller, so the page behind it
+     is frozen rather than scrolling under the reader's fingers. */
+  html.panel-open {
+    overflow: hidden;
+  }
+
+  /* Hide the landing content outright rather than relying on the panel's own
+     opacity. The canvas sits behind everything at z-index -1, so a translucent
+     panel cannot show the particles without also ghosting the headline
+     through them. visibility keeps the layout, and with it the scroll
+     position, for when the panel closes. */
+  html.panel-open #page > *:not(.panel) {
+    visibility: hidden;
   }
 
   a {
@@ -394,6 +442,305 @@
 
   .work-row:hover .work-link {
     color: var(--c-accent);
+  }
+
+  /* ---- destination panels --------------------------------------------- */
+
+  .panel {
+    position: fixed;
+    inset: 0;
+    z-index: 40;
+    display: flex;
+    flex-direction: column;
+    /* Left translucent so the particle field stays alive behind the page
+       rather than the reader dropping into a dead box. Safe only because the
+       landing content is hidden while a panel is open. */
+    background-color: color-mix(in srgb, var(--c-base) 88%, transparent);
+  }
+
+  .panel-bar {
+    flex: 0 0 auto;
+    height: var(--topbar-h);
+    border-bottom: 1px solid var(--c-hairline);
+    background-color: color-mix(in srgb, var(--c-base) 96%, transparent);
+  }
+
+  .panel-close {
+    @apply flex items-center gap-2.5 font-mono text-[11px] uppercase leading-none tracking-label text-muted;
+    background: none;
+    cursor: pointer;
+    padding: 0.5rem 0;
+    transition: color 0.18s ease;
+  }
+
+  .panel-close:hover {
+    color: var(--c-accent);
+  }
+
+  .panel-scroll {
+    flex: 1 1 auto;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
+  .panel-body {
+    padding-top: 4.5rem;
+    padding-bottom: 7rem;
+  }
+
+  .panel-intro {
+    margin-top: 1.75rem;
+    max-width: 62ch;
+    font-size: 15px;
+    line-height: 1.65;
+    letter-spacing: -0.011em;
+    color: var(--c-text);
+  }
+
+  .panel-block {
+    margin-top: 4.5rem;
+    border-top: 1px solid var(--c-hairline);
+    padding-top: 1.6rem;
+  }
+
+  .panel-note {
+    margin-top: 1.5rem;
+    max-width: 58ch;
+    font-size: 14px;
+    line-height: 1.6;
+    letter-spacing: -0.011em;
+    color: var(--c-muted);
+  }
+
+  .panel-list {
+    margin-top: 2rem;
+    border-bottom: 1px solid var(--c-hairline);
+  }
+
+  .panel-list-item {
+    max-width: 72ch;
+    padding: 1rem 0;
+    border-top: 1px solid var(--c-hairline);
+    font-size: 15px;
+    line-height: 1.55;
+    letter-spacing: -0.011em;
+    color: var(--c-text);
+  }
+
+  /* ---- assessment phases ---------------------------------------------- */
+
+  .phase-list {
+    margin-top: 2rem;
+    border-bottom: 1px solid var(--c-hairline);
+  }
+
+  .phase {
+    display: grid;
+    gap: 0.55rem 1.5rem;
+    padding: 1.7rem 0;
+    border-top: 1px solid var(--c-hairline);
+  }
+
+  @media (min-width: 900px) {
+    .phase {
+      grid-template-columns: 7rem minmax(0, 1fr) minmax(0, 2fr);
+      align-items: baseline;
+    }
+  }
+
+  .phase-range {
+    @apply font-mono text-[11px] uppercase leading-none tracking-label text-accent;
+  }
+
+  .phase-title {
+    font-size: 17px;
+    line-height: 1.2;
+    letter-spacing: -0.02em;
+    color: var(--c-text);
+  }
+
+  .phase-body {
+    max-width: 56ch;
+    font-size: 14px;
+    line-height: 1.6;
+    letter-spacing: -0.011em;
+    color: var(--c-muted);
+  }
+
+  /* ---- form ------------------------------------------------------------ */
+
+  .form-grid {
+    display: grid;
+    gap: 1.75rem;
+    margin-top: 2.25rem;
+    max-width: 46rem;
+  }
+
+  @media (min-width: 700px) {
+    .form-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    .field-wide,
+    .form-submit {
+      grid-column: 1 / -1;
+    }
+  }
+
+  .field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+  }
+
+  .field-label {
+    @apply font-mono text-[11px] uppercase leading-none tracking-label text-muted;
+  }
+
+  .field-input {
+    width: 100%;
+    padding: 0.7rem 0.85rem;
+    background-color: color-mix(in srgb, var(--c-surface) 70%, transparent);
+    border: 1px solid var(--c-hairline);
+    color: var(--c-text);
+    font-family: inherit;
+    font-size: 14px;
+    line-height: 1.5;
+    letter-spacing: -0.011em;
+    transition: border-color 0.18s ease;
+  }
+
+  .field-input::placeholder {
+    color: var(--c-muted);
+  }
+
+  .field-input:focus {
+    border-color: var(--c-accent);
+    outline: none;
+  }
+
+  textarea.field-input {
+    resize: vertical;
+    min-height: 7rem;
+  }
+
+  /* Custom caret drawn with borders rather than a background image, so the
+     select keeps to the palette without introducing another colour literal. */
+  .field-select {
+    position: relative;
+  }
+
+  select.field-input {
+    appearance: none;
+    padding-right: 2.4rem;
+  }
+
+  .field-select::after {
+    content: "";
+    position: absolute;
+    right: 1rem;
+    bottom: 1.2rem;
+    width: 0;
+    height: 0;
+    border-left: 4px solid transparent;
+    border-right: 4px solid transparent;
+    border-top: 5px solid var(--c-muted);
+    pointer-events: none;
+  }
+
+  .form-submit {
+    justify-self: start;
+    border: 0;
+    cursor: pointer;
+    font-family: theme("fontFamily.mono");
+  }
+
+  .form-status {
+    margin-top: 1.5rem;
+    max-width: 58ch;
+    font-size: 14px;
+    line-height: 1.6;
+    letter-spacing: -0.011em;
+    color: var(--c-text);
+  }
+
+  .form-fallback {
+    @apply font-mono text-[12px] tracking-label text-accent;
+    border-bottom: 1px solid var(--c-hairline);
+  }
+
+  /* ---- deployment record table ---------------------------------------- */
+
+  /* Six columns will not fit a phone, so the table scrolls inside its own
+     container and the page body never scrolls sideways. */
+  .table-scroll {
+    margin-top: 2rem;
+    overflow-x: auto;
+    border-bottom: 1px solid var(--c-hairline);
+  }
+
+  .record-table {
+    width: 100%;
+    min-width: 44rem;
+    border-collapse: collapse;
+    font-size: 14px;
+    letter-spacing: -0.011em;
+  }
+
+  .record-table th {
+    @apply font-mono text-[11px] uppercase leading-none tracking-label text-muted;
+    text-align: left;
+    padding: 0 1.25rem 0.9rem 0;
+    border-bottom: 1px solid var(--c-hairline);
+  }
+
+  .record-table td {
+    padding: 0.95rem 1.25rem 0.95rem 0;
+    border-top: 1px solid var(--c-hairline);
+    color: var(--c-muted);
+    vertical-align: top;
+  }
+
+  .record-table tr:first-child td {
+    border-top: 0;
+  }
+
+  .cell-year,
+  .cell-mono {
+    @apply font-mono text-[12px] uppercase tracking-label;
+    white-space: nowrap;
+  }
+
+  .cell-client {
+    color: var(--c-text);
+  }
+
+  .cell-result {
+    @apply font-mono text-[12px] uppercase tracking-label;
+    color: var(--c-text);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+
+  /* ---- methodology ----------------------------------------------------- */
+
+  .def-list {
+    margin-top: 2rem;
+    border-bottom: 1px solid var(--c-hairline);
+  }
+
+  .def-term {
+    @apply font-mono text-[11px] uppercase leading-none tracking-label text-accent;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--c-hairline);
+  }
+
+  .def-body {
+    max-width: 68ch;
+    margin: 0.75rem 0 1.5rem;
+    font-size: 14px;
+    line-height: 1.6;
+    letter-spacing: -0.011em;
+    color: var(--c-muted);
   }
 
   /* ---- readability scrims --------------------------------------------- */

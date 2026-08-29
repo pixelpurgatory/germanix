@@ -171,6 +171,54 @@ try {
   await client.send("Page.navigate", { url: pageUrl });
   await new Promise((r) => setTimeout(r, 3500));
 
+  // Opening a panel the way a reader does, by changing the hash.
+  const hash = argOf("hash", "");
+  if (hash) {
+    await client.send("Runtime.evaluate", {
+      expression: `location.hash = ${JSON.stringify(hash)}`,
+    });
+    await new Promise((r) => setTimeout(r, 1200));
+    const panel = await client.send("Runtime.evaluate", {
+      returnByValue: true,
+      expression: `(() => {
+        const p = document.querySelector('#panel-' + ${JSON.stringify(hash.replace(/^#/, ""))});
+        return JSON.stringify({
+          exists: !!p,
+          hidden: p ? p.hidden : null,
+          contentHeight: p ? p.querySelector('.panel-scroll').scrollHeight : 0,
+          focused: document.activeElement ? document.activeElement.className : null,
+          htmlOverflow: getComputedStyle(document.documentElement).overflow,
+        });
+      })()`,
+    });
+    console.log(`  panel: ${panel.result.value}`);
+
+    const panelScroll = Number(argOf("panelScroll", "0"));
+    if (panelScroll > 0) {
+      await client.send("Runtime.evaluate", {
+        expression: `document.querySelector('.panel:not([hidden]) .panel-scroll').scrollTop = ${panelScroll}`,
+      });
+      await new Promise((r) => setTimeout(r, 900));
+    }
+
+    if (args.includes("--panelClose")) {
+      await client.send("Runtime.evaluate", {
+        expression: `document.querySelector('.panel:not([hidden]) [data-close]').click()`,
+      });
+      await new Promise((r) => setTimeout(r, 800));
+      const after = await client.send("Runtime.evaluate", {
+        returnByValue: true,
+        expression: `JSON.stringify({
+          anyOpen: !!document.querySelector('.panel:not([hidden])'),
+          hash: location.hash,
+          htmlOverflow: getComputedStyle(document.documentElement).overflow,
+          landingVisible: getComputedStyle(document.querySelector('#page > header')).visibility,
+        })`,
+      });
+      console.log(`  after close: ${after.result.value}`);
+    }
+  }
+
   await mkdir(OUT_DIR, { recursive: true });
   for (const p of POSITIONS) {
     await client.send("Runtime.evaluate", {

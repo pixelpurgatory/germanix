@@ -4,6 +4,7 @@ import { ParticleSystem, selectTier } from "./gl/system.ts";
 import { attachReveals, createScrollDriver } from "./scroll.ts";
 import { createPointerDriver } from "./pointer.ts";
 import { buildPage, createNavHighlighter } from "./page.ts";
+import { mountPanels } from "./panels.ts";
 import { dominantState } from "./gl/states.ts";
 
 const canvas = document.querySelector<HTMLCanvasElement>("#gl");
@@ -11,6 +12,7 @@ const mount = document.querySelector<HTMLElement>("#page");
 if (!canvas || !mount) throw new Error("missing #gl canvas or #page mount");
 
 const reveals = buildPage(mount);
+mountPanels(mount);
 
 const core = new GLCore(canvas);
 const system = new ParticleSystem(selectTier());
