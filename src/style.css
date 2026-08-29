@@ -748,6 +748,63 @@
     white-space: nowrap;
   }
 
+  /* ---- transcript gallery ---------------------------------------------- */
+
+  .example {
+    margin-top: 4rem;
+    border-top: 1px solid var(--c-hairline);
+    padding-top: 2rem;
+  }
+
+  .example-grid {
+    display: grid;
+    gap: 2rem;
+  }
+
+  /* A 660px phone shot beside its note reads far better than one stretched
+     across the column; a Slack window does not survive being squeezed. */
+  @media (min-width: 960px) {
+    .example--phone .example-grid {
+      grid-template-columns: minmax(0, 1fr) 300px;
+      align-items: start;
+      gap: 3rem;
+    }
+  }
+
+  .example-platform {
+    @apply font-mono text-[11px] uppercase leading-none tracking-label text-text;
+  }
+
+  .example-name {
+    margin-top: 1.4rem;
+    font-size: 19px;
+    line-height: 1.15;
+    letter-spacing: -0.02em;
+    color: var(--c-text);
+  }
+
+  .example-note {
+    margin-top: 1rem;
+    max-width: 58ch;
+    font-size: 14px;
+    line-height: 1.62;
+    letter-spacing: -0.011em;
+    color: var(--c-muted);
+  }
+
+  .example-shot {
+    margin: 0;
+    border: 1px solid var(--c-hairline);
+    background-color: var(--c-surface);
+    overflow: hidden;
+  }
+
+  .example-shot img {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+
   /* ---- methodology ----------------------------------------------------- */
 
   .def-list {

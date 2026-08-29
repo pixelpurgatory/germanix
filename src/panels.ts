@@ -1,5 +1,6 @@
-import type { BookPanel, FormField, PanelBase, RecordPanel } from "./content.ts";
+import type { BookPanel, Cta, ExamplesPanel, FormField, PanelBase, RecordPanel } from "./content.ts";
 import { t } from "./locale.ts";
+import { SHOTS } from "./assets.ts";
 
 /**
  * The two destination pages, as overlays rather than separate documents.
@@ -20,6 +21,13 @@ function el<K extends keyof HTMLElementTagNameMap>(
   const node = document.createElement(tag);
   if (className) node.className = className;
   if (text !== undefined) node.textContent = text;
+  return node;
+}
+
+function ctaLink(cta: Cta): HTMLAnchorElement {
+  const node = el("a", "cta-primary");
+  node.href = cta.href;
+  node.append(el("span", "", cta.label), el("span", "cta-glyph", t().ui.ctaGlyph));
   return node;
 }
 
@@ -188,6 +196,56 @@ function buildForm(panel: BookPanel): HTMLElement {
   return section;
 }
 
+/**
+ * Transcript gallery. Phone screenshots sit beside their note, desktop ones
+ * below it, because a 660px phone shot next to text reads far better than a
+ * full-width one and a Slack window does not survive being squeezed.
+ */
+function buildExamples(panel: ExamplesPanel): HTMLElement {
+  const { root, body } = shell(panel);
+
+  for (const item of panel.items) {
+    const section = el("section", `example example--${item.orientation}`);
+
+    const head = el("div", "flex flex-wrap items-baseline gap-x-4 gap-y-2");
+    head.append(
+      el("span", "eyebrow-index", item.index),
+      el("span", "example-platform", item.platform),
+      el("span", "label", item.tag),
+    );
+
+    const text = el("div", "example-text");
+    text.append(head, el("h3", "example-name", item.client), el("p", "example-note", item.note));
+
+    const figure = el("figure", "example-shot");
+    const shot = SHOTS[item.image];
+    if (shot) {
+      const img = el("img", "");
+      img.src = shot.src;
+      img.width = shot.width;
+      img.height = shot.height;
+      img.alt = item.alt;
+      img.loading = "lazy";
+      img.decoding = "async";
+      figure.append(img);
+    }
+
+    const grid = el("div", "example-grid");
+    grid.append(text, figure);
+    section.append(grid);
+    body.append(section);
+  }
+
+  const outro = el("section", "panel-block");
+  outro.append(el("p", "panel-intro", panel.outro));
+  const cta = ctaLink(panel.cta);
+  cta.classList.add("mt-10");
+  outro.append(cta);
+  body.append(outro);
+
+  return root;
+}
+
 function buildRecord(panel: RecordPanel): HTMLElement {
   const { root, body } = shell(panel);
 
@@ -317,7 +375,11 @@ function installListeners(): void {
 }
 
 export function mountPanels(mount: HTMLElement): void {
-  mount.append(buildBook(t().panels.book), buildRecord(t().panels.record));
+  mount.append(
+    buildBook(t().panels.book),
+    buildRecord(t().panels.record),
+    buildExamples(t().panels.examples),
+  );
   installListeners();
   route();
 }

@@ -43,6 +43,8 @@ export interface Section {
   readonly body: string;
   readonly metrics: readonly Metric[];
   readonly cta: Cta;
+  /** Second, quieter action. Only the operators section has one so far. */
+  readonly secondary: Cta | null;
   readonly align: "left" | "right";
 }
 
@@ -142,6 +144,25 @@ export interface BookPanel extends PanelBase {
   };
 }
 
+export interface ExampleItem {
+  readonly index: string;
+  readonly platform: string;
+  readonly client: string;
+  readonly tag: string;
+  readonly note: string;
+  readonly alt: string;
+  /** Key into SHOTS in assets.ts. Kept as a string so this module stays
+   *  importable by plain Node, which cannot resolve an image import. */
+  readonly image: string;
+  readonly orientation: "phone" | "wide";
+}
+
+export interface ExamplesPanel extends PanelBase {
+  readonly items: readonly ExampleItem[];
+  readonly outro: string;
+  readonly cta: Cta;
+}
+
 export interface RecordPanel extends PanelBase {
   readonly table: {
     readonly heading: string;
@@ -175,6 +196,7 @@ export interface Content {
   readonly panels: {
     readonly book: BookPanel;
     readonly record: RecordPanel;
+    readonly examples: ExamplesPanel;
   };
   readonly footer: {
     readonly columns: readonly FooterColumn[];
@@ -236,6 +258,7 @@ const en: Content = {
         { value: "31 MS", label: "MEDIAN KERNEL LATENCY" },
       ],
       cta: { label: "Book an automation audit", href: "#book" },
+      secondary: null,
       align: "left",
     },
     {
@@ -250,6 +273,7 @@ const en: Content = {
         { value: "41", label: "WEBGL BUILDS SHIPPED" },
       ],
       cta: { label: "See how we measure it", href: "#record" },
+      secondary: null,
       align: "right",
     },
     {
@@ -264,6 +288,7 @@ const en: Content = {
         { value: "27", label: "LANGUAGES IN SERVICE" },
       ],
       cta: { label: "Hear a live operator", href: "#book" },
+      secondary: { label: "See real conversations", href: "#examples" },
       align: "left",
     },
     {
@@ -278,6 +303,7 @@ const en: Content = {
         { value: "6.3 W", label: "DRAW PER INFERENCE NODE" },
       ],
       cta: { label: "Map a site deployment", href: "#book" },
+      secondary: null,
       align: "right",
     },
   ],
@@ -444,6 +470,58 @@ const en: Content = {
       },
     },
 
+    examples: {
+      id: "examples",
+      label: "CHAT AGENTS / TRANSCRIPTS",
+      title: "Four agents, mid-conversation.",
+      intro: "Four agents on four platforms, doing four different jobs. The note under each one points at the part that is harder than it looks.",
+      close: "Close",
+      items: [
+        {
+          index: "01",
+          platform: "WHATSAPP",
+          client: "Oak & Ember",
+          tag: "RESTAURANT / BOOKINGS",
+          note: "The guest changes the time twice and the party size twice, then cancels and un-cancels. One reservation is held through all of it and the guest is never asked to start again. The agent also declines to promise the patio, because the patio depends on the weather.",
+          alt: "A WhatsApp conversation with a restaurant booking agent. The guest repeatedly changes the time and party size, asks for a quiet corner table, cancels, then reinstates the booking. The agent confirms five people at 7pm in the quiet corner.",
+          image: "whatsapp",
+          orientation: "phone",
+        },
+        {
+          index: "02",
+          platform: "MESSENGER",
+          client: "Pawfect Grooming",
+          tag: "PET SERVICES / SCHEDULING",
+          note: "Eight separate requirements arrive across five messages: a stylist by name, oatmeal shampoo, ear length, a paw soak, a bandana, the shape of the face trim. All of them survive to the booking, and the cancellation policy is answered the first time it is asked.",
+          alt: "A Messenger conversation booking a dog grooming appointment. The owner adds requirements one message at a time, including a named groomer, oatmeal shampoo, a paw soak and a bandana. The agent confirms each and states the cancellation policy.",
+          image: "messenger",
+          orientation: "phone",
+        },
+        {
+          index: "03",
+          platform: "DISCORD",
+          client: "Mythic Realms",
+          tag: "GAMES / COMMUNITY SUPPORT",
+          note: "A mechanics question answered with the actual numbers, in a public channel where a wrong answer is visible to the whole server. It reads from the live design documents, not from a summary written six patches ago.",
+          alt: "A Discord channel where a player asks how the stamina system works in boss fights. The bot answers with specific thresholds and regeneration timings, then adds three tactical tips.",
+          image: "discord",
+          orientation: "wide",
+        },
+        {
+          index: "04",
+          platform: "SLACK",
+          client: "Internal sales assistant",
+          tag: "CONSUMER GOODS / INTERNAL",
+          note: "Three people ask follow-ups in one thread and the regional context carries across all of them. It answers in a table when the answer is tabular, flags a competitor promotion with a recommendation attached, and drafts customer-ready copy when asked.",
+          alt: "A Slack channel where three colleagues ask a sales assistant about west region volume. It replies with a state-level table, an analysis of competitor discounting, and a draft note to send to accounts.",
+          image: "slack",
+          orientation: "wide",
+        },
+      ],
+      outro: "Every one of these runs on the client's own account, on the platform their customers already use. We build the agent, connect it to the systems that hold the answers, and then run it.",
+      cta: { label: "Talk about an agent", href: "#book" },
+    },
+
     record: {
       id: "record",
       label: "ENGAGEMENT / EVIDENCE",
@@ -589,6 +667,7 @@ const de: Content = {
         { value: "31 MS", label: "MEDIANE KERNEL-LATENZ" },
       ],
       cta: { label: "Automatisierungs-Audit buchen", href: "#book" },
+      secondary: null,
       align: "left",
     },
     {
@@ -603,6 +682,7 @@ const de: Content = {
         { value: "41", label: "AUSGELIEFERTE WEBGL-BUILDS" },
       ],
       cta: { label: "So messen wir das", href: "#record" },
+      secondary: null,
       align: "right",
     },
     {
@@ -617,6 +697,7 @@ const de: Content = {
         { value: "27", label: "SPRACHEN IM EINSATZ" },
       ],
       cta: { label: "Agenten live hören", href: "#book" },
+      secondary: { label: "Echte Verläufe ansehen", href: "#examples" },
       align: "left",
     },
     {
@@ -631,6 +712,7 @@ const de: Content = {
         { value: "6,3 W", label: "LEISTUNGSAUFNAHME PRO KNOTEN" },
       ],
       cta: { label: "Standort-Rollout planen", href: "#book" },
+      secondary: null,
       align: "right",
     },
   ],
@@ -795,6 +877,58 @@ const de: Content = {
           },
         ],
       },
+    },
+
+    examples: {
+      id: "examples",
+      label: "CHAT-AGENTEN / VERLÄUFE",
+      title: "Vier Agenten, mitten im Gespräch.",
+      intro: "Vier Agenten auf vier Plattformen mit vier verschiedenen Aufgaben. Der Hinweis unter jedem Bild zeigt auf die Stelle, die schwieriger ist, als sie aussieht.",
+      close: "Schließen",
+      items: [
+        {
+          index: "01",
+          platform: "WHATSAPP",
+          client: "Oak & Ember",
+          tag: "RESTAURANT / RESERVIERUNG",
+          note: "Der Gast ändert zweimal die Uhrzeit und zweimal die Personenzahl, storniert und nimmt die Stornierung zurück. Eine einzige Reservierung trägt das alles mit, und der Gast muss nie von vorn anfangen. Die Terrasse sagt der Agent bewusst nicht zu, weil sie vom Wetter abhängt.",
+          alt: "Ein WhatsApp-Verlauf mit einem Reservierungsagenten. Der Gast ändert mehrfach Uhrzeit und Personenzahl, bittet um einen ruhigen Ecktisch, storniert und bucht dann doch. Der Agent bestätigt fünf Personen um 19 Uhr in der ruhigen Ecke.",
+          image: "whatsapp",
+          orientation: "phone",
+        },
+        {
+          index: "02",
+          platform: "MESSENGER",
+          client: "Pawfect Grooming",
+          tag: "TIERPFLEGE / TERMINE",
+          note: "Acht einzelne Wünsche kommen über fünf Nachrichten verteilt an: eine Pflegerin mit Namen, Hafershampoo, Ohrlänge, Pfotenbad, Halstuch, die Form des Gesichtsschnitts. Alle landen in der Buchung, und die Stornoregel wird beim ersten Nachfragen beantwortet.",
+          alt: "Ein Messenger-Verlauf zur Buchung eines Hundesalon-Termins. Der Halter ergänzt Wunsch für Wunsch, darunter eine namentlich genannte Pflegerin, Hafershampoo, Pfotenbad und Halstuch. Der Agent bestätigt jeden Punkt und nennt die Stornoregel.",
+          image: "messenger",
+          orientation: "phone",
+        },
+        {
+          index: "03",
+          platform: "DISCORD",
+          client: "Mythic Realms",
+          tag: "GAMES / COMMUNITY-SUPPORT",
+          note: "Eine Frage zur Spielmechanik, beantwortet mit den tatsächlichen Werten, in einem öffentlichen Kanal, in dem eine falsche Antwort der ganze Server sieht. Gelesen wird aus den aktuellen Designdokumenten, nicht aus einer Zusammenfassung von vor sechs Patches.",
+          alt: "Ein Discord-Kanal, in dem ein Spieler nach dem Ausdauersystem in Bosskämpfen fragt. Der Bot antwortet mit konkreten Schwellenwerten und Regenerationszeiten und ergänzt drei taktische Hinweise.",
+          image: "discord",
+          orientation: "wide",
+        },
+        {
+          index: "04",
+          platform: "SLACK",
+          client: "Interner Vertriebsassistent",
+          tag: "KONSUMGÜTER / INTERN",
+          note: "Drei Personen stellen in einem Thread Rückfragen, und der regionale Kontext trägt über alle hinweg. Wo die Antwort eine Tabelle ist, kommt eine Tabelle. Eine Wettbewerbsaktion wird samt Empfehlung markiert, und auf Zuruf entsteht ein versandfertiger Textentwurf.",
+          alt: "Ein Slack-Kanal, in dem drei Kolleginnen und Kollegen einen Vertriebsassistenten nach dem Absatz in der Westregion fragen. Er antwortet mit einer Tabelle nach Bundesstaat, einer Einschätzung zur Rabattaktion des Wettbewerbs und einem Textentwurf für Kunden.",
+          image: "slack",
+          orientation: "wide",
+        },
+      ],
+      outro: "Jeder davon läuft im Konto des Kunden, auf der Plattform, die dessen Kundschaft ohnehin benutzt. Wir bauen den Agenten, verbinden ihn mit den Systemen, in denen die Antworten liegen, und betreiben ihn danach.",
+      cta: { label: "Über einen Agenten sprechen", href: "#book" },
     },
 
     record: {

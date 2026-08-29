@@ -161,15 +161,16 @@ function buildSection(section: Section): HTMLElement {
   const headline = el("h2", "mt-8 text-headline text-text", section.headline);
   headline.id = `${section.id}-headline`;
 
-  const cta = ctaLink(section.cta, "primary");
-  cta.classList.add("mt-10");
+  const actions = el("div", "mt-10 flex flex-wrap items-center gap-x-8 gap-y-4");
+  actions.append(ctaLink(section.cta, "primary"));
+  if (section.secondary) actions.append(ctaLink(section.secondary, "quiet"));
 
   column.append(
     eyebrow(section.index, section.label),
     headline,
     el("p", BODY, section.body),
     metricRow(section.metrics),
-    cta,
+    actions,
   );
 
   grid.append(column);
