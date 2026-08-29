@@ -1,0 +1,62 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [claude/b2b-landing-threejs-dark-iqzt0r]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Never let two deploys race; queue them instead of cancelling, so a green
+# build always makes it to the live site.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - run: npm ci
+
+      # The project's own gates, so a broken build cannot reach the live site.
+      - name: Typecheck
+        run: npx tsc --noEmit
+
+      - name: Blend continuity
+        run: node scripts/check-blend.ts
+
+      - name: Build
+        run: npm run build
+        env:
+          PAGES_BASE: /germanix/
+
+      # enablement turns Pages on the first time this runs, so the site does
+      # not need anyone to flip a switch in repository settings.
+      - uses: actions/configure-pages@v5
+        with:
+          enablement: true
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

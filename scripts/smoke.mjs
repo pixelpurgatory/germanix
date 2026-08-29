@@ -39,10 +39,12 @@ const MIME = {
 };
 
 async function serveDist() {
-  const root = new URL("../dist/", import.meta.url).pathname;
+  const root = new URL(argOf("root", "../dist/"), import.meta.url).pathname;
   const server = createServer(async (req, res) => {
     const url = (req.url || "/").split("?")[0];
-    const rel = normalize(url === "/" ? "/index.html" : url).replace(/^(\.\.[/\\])+/, "");
+    // Directory index, the way a static host serves it.
+    const wanted = url.endsWith("/") ? `${url}index.html` : url;
+    const rel = normalize(wanted).replace(/^(\.\.[/\\])+/, "");
     try {
       const body = await readFile(join(root, rel));
       res.writeHead(200, { "content-type": MIME[extname(rel)] || "application/octet-stream" });
@@ -108,7 +110,7 @@ function textOf(arg) {
 }
 
 const { server, port } = await serveDist();
-const pageUrl = `http://127.0.0.1:${port}/`;
+const pageUrl = `http://127.0.0.1:${port}${argOf("path", "/")}`;
 const debugPort = 9222 + (process.pid % 500);
 
 const chrome = spawn(
