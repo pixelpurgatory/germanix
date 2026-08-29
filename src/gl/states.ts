@@ -38,6 +38,7 @@ export const STATES: readonly StateMeta[] = [
 export const LAYOUT_VH = {
   hero: 180,
   section: 140,
+  work: 78,
   conversion: 100,
   // The footer is content-sized rather than pinned, so this tracks what it
   // actually measures at desktop width. If it drifts, every blend centre
@@ -47,7 +48,11 @@ export const LAYOUT_VH = {
 } as const;
 
 const TOTAL_VH =
-  LAYOUT_VH.hero + LAYOUT_VH.section * 4 + LAYOUT_VH.conversion + LAYOUT_VH.footer;
+  LAYOUT_VH.hero +
+  LAYOUT_VH.section * 4 +
+  LAYOUT_VH.work +
+  LAYOUT_VH.conversion +
+  LAYOUT_VH.footer;
 const SCROLL_VH = TOTAL_VH - LAYOUT_VH.viewport;
 
 /** Width of each transition band. Every state has nonzero weight inside it. */

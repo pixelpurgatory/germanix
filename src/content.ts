@@ -49,6 +49,22 @@ export interface Conversion {
   readonly meta: readonly Metric[];
 }
 
+export interface WorkItem {
+  readonly index: string;
+  readonly name: string;
+  readonly discipline: string;
+  readonly note: string;
+  readonly domain: string;
+  readonly href: string;
+}
+
+export interface Work {
+  readonly id: string;
+  readonly label: string;
+  readonly headline: string;
+  readonly items: readonly WorkItem[];
+}
+
 export interface FooterColumn {
   readonly heading: string;
   readonly items: readonly Cta[];
@@ -70,6 +86,7 @@ export interface Content {
   };
   readonly hero: Hero;
   readonly sections: readonly Section[];
+  readonly work: Work;
   readonly conversion: Conversion;
   readonly footer: {
     readonly columns: readonly FooterColumn[];
@@ -172,6 +189,38 @@ export const content: Content = {
       align: "right",
     },
   ],
+
+  work: {
+    id: "work",
+    label: "SELECTED WORK",
+    headline: "A few you can open yourself.",
+    items: [
+      {
+        index: "01",
+        name: "Cula",
+        discipline: "PLATFORM / DATA",
+        note: "Monitoring, reporting and verification for carbon removal, built on live operational data and covering every removal pathway.",
+        domain: "cula.tech",
+        href: "https://www.cula.tech",
+      },
+      {
+        index: "02",
+        name: "Pier88 Coast",
+        discipline: "HOSPITALITY / BRAND",
+        note: "A coastal destination brand that carries one venue from aperitivo through to the night programme.",
+        domain: "pier88coast.com",
+        href: "https://pier88coast.com",
+      },
+      {
+        index: "03",
+        name: "CRAV",
+        discipline: "COMMERCE / BRAND",
+        note: "Artisan smashed burger house in Navarra, with ordering built into the brand site rather than bolted beside it.",
+        domain: "cravburgers.shop",
+        href: "https://www.cravburgers.shop",
+      },
+    ],
+  },
 
   conversion: {
     id: "engagement",

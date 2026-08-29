@@ -332,6 +332,70 @@
     color: var(--c-text);
   }
 
+  /* ---- selected work -------------------------------------------------- */
+
+  .work-list {
+    margin-top: 2.75rem;
+    border-bottom: 1px solid var(--c-hairline);
+  }
+
+  /* The whole row is the link, so the hit area matches what reads as one
+     item rather than just the domain at the end of it. */
+  .work-row {
+    display: grid;
+    gap: 0.5rem 1.5rem;
+    padding: 1.6rem 0;
+    border-top: 1px solid var(--c-hairline);
+    transition: opacity 0.18s ease;
+  }
+
+  @media (min-width: 900px) {
+    .work-row {
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1.85fr) auto;
+      align-items: start;
+      padding: 1.9rem 0;
+    }
+  }
+
+  .work-head {
+    display: flex;
+    flex-direction: column;
+    gap: 0.7rem;
+  }
+
+  .work-name {
+    font-size: 19px;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    color: var(--c-text);
+  }
+
+  .work-discipline {
+    @apply font-mono text-[11px] uppercase leading-none tracking-label text-muted;
+  }
+
+  .work-note {
+    max-width: 52ch;
+    font-size: 14px;
+    line-height: 1.6;
+    letter-spacing: -0.011em;
+    color: var(--c-muted);
+    transition: color 0.18s ease;
+  }
+
+  .work-link {
+    @apply flex items-center gap-2.5 font-mono text-[11px] uppercase leading-none tracking-label text-muted;
+    transition: color 0.18s ease;
+  }
+
+  .work-row:hover .work-note {
+    color: var(--c-text);
+  }
+
+  .work-row:hover .work-link {
+    color: var(--c-accent);
+  }
+
   /* ---- readability scrims --------------------------------------------- */
 
   /* Written by hand rather than with gradient utilities so the stylesheet
@@ -358,5 +422,11 @@
   /* Lets the settled state-D array stay faintly visible behind the band. */
   .band-surface {
     background-color: color-mix(in srgb, var(--c-surface) 74%, transparent);
+  }
+
+  /* Darker than the conversion band, because the work rows are long lines of
+     small text and the box wireframe reads straight through them otherwise. */
+  .band-work {
+    background-color: color-mix(in srgb, var(--c-base) 88%, transparent);
   }
 }

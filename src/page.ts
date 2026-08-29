@@ -1,5 +1,5 @@
 import { content } from "./content.ts";
-import type { Cta, Metric, NavItem, Section } from "./content.ts";
+import type { Cta, Metric, NavItem, Section, WorkItem } from "./content.ts";
 import { LAYOUT_VH } from "./gl/states.ts";
 import type { RevealTarget } from "./scroll.ts";
 
@@ -158,6 +158,50 @@ function buildSection(section: Section): HTMLElement {
   return node;
 }
 
+/** One work row: a whole-row link out to the live site. */
+function workRow(item: WorkItem): HTMLAnchorElement {
+  const row = el("a", "work-row");
+  row.href = item.href;
+  row.target = "_blank";
+  row.rel = "noopener noreferrer";
+
+  const head = el("div", "work-head");
+  const title = el("div", "flex items-baseline gap-3");
+  title.append(
+    el("span", "eyebrow-index", item.index),
+    el("span", "work-name", item.name),
+  );
+  head.append(title, el("span", "work-discipline", item.discipline));
+
+  const link = el("div", "work-link");
+  link.append(el("span", "", item.domain), el("span", "cta-glyph", content.ui.ctaGlyph));
+
+  row.append(head, el("p", "work-note", item.note), link);
+  return row;
+}
+
+function buildWork(): HTMLElement {
+  const work = content.work;
+  const node = el("section", "band-work relative border-t border-hairline");
+  node.id = work.id;
+  node.style.minHeight = "var(--h-work)";
+  node.setAttribute("aria-labelledby", `${work.id}-headline`);
+
+  const inner = el("div", "flex min-h-[inherit] items-center py-20");
+  const shell = el("div", SHELL);
+
+  const headline = el("h2", "mt-7 text-headline text-text", work.headline);
+  headline.id = `${work.id}-headline`;
+
+  const list = el("div", "work-list");
+  for (const item of work.items) list.append(workRow(item));
+
+  shell.append(eyebrow("", work.label), headline, list);
+  inner.append(shell);
+  node.append(inner);
+  return node;
+}
+
 function buildConversion(): HTMLElement {
   const band = content.conversion;
   const node = el("section", "band-surface relative border-t border-hairline");
@@ -256,6 +300,7 @@ function applyLayoutVars(): void {
   const root = document.documentElement.style;
   root.setProperty("--h-hero", `${LAYOUT_VH.hero}vh`);
   root.setProperty("--h-section", `${LAYOUT_VH.section}vh`);
+  root.setProperty("--h-work", `${LAYOUT_VH.work}vh`);
   root.setProperty("--h-conversion", `${LAYOUT_VH.conversion}vh`);
   root.setProperty("--h-footer", `${LAYOUT_VH.footer}vh`);
 }
@@ -285,6 +330,7 @@ export function buildPage(mount: HTMLElement): readonly RevealTarget[] {
     buildNav(),
     hero,
     ...sections,
+    buildWork(),
     buildConversion(),
     buildFooter(),
   );
